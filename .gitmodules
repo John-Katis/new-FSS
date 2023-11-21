@@ -1,0 +1,6 @@
+[submodule "new-FSS/EzPC"]
+	path = new-FSS/EzPC
+	url = https://github.com/John-Katis/EzPC
+[submodule "EzPC"]
+	path = EzPC
+	url = https://github.com/John-Katis/EzPC
