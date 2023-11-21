@@ -41,7 +41,7 @@ pub async fn pika_eval(p: &mut MPCParty<BasicOffline>, x_share:&RingElm)->RingEl
 
     // let mut u_vec: Vec<T> = Vec::new();
 
-    // need ring elements that represent the correct domain (16 bits)
+    // // need ring elements that represent the correct domain (16 bits)
     // for i in 0..y_vec.len() {
     //     let shift = i + x.value;
     //     u_vec.push(&y_vec[shift]);
@@ -63,7 +63,7 @@ pub async fn pika_eval(p: &mut MPCParty<BasicOffline>, x_share:&RingElm)->RingEl
 fn load_func_db()->Vec<f32>{
     let mut ret: Vec<f32> = Vec::new();
 
-    for i in 0..16 {
+    for i in 0..32 {
         let mut temp: Vec<f32> = Vec::new();
         match read_file(&format!("../data/func_database/slice_{}.bin", i)) {
             Ok(value) => temp = value,

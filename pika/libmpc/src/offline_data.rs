@@ -102,23 +102,25 @@ impl BasicOffline{
 
         let mut func_truth_table: Vec<f32> = Vec::new();
 
-    // Iterate over all possible 7-bit integer parts
-    // All numbers from 100...00(1 followed by all 0s) are considered negative numbers
-    for integer_part in 0..(1 << 7) {
-        for floating_part in 0..(1 << 9) {
-        
-            let combined_value = (integer_part << 9) | floating_part; // | is logical or operation
+        // Iterate over all possible 7-bit integer parts
+        // All numbers from 100...00(1 followed by all 0s) are considered negative numbers
+        for integer_part in 0..(1 << 19) {
+            let progress = integer_part  * 100 / (1 << 19);
+            println!("{}", progress);
+            for floating_part in 0..(1 << 13) {
+            
+                let combined_value = (integer_part << 13) | floating_part; // | is logical or operation
 
-            // Scale the combined value to represent the fixed-point with 9 bits
-            let scaled_value = (combined_value as f32) / (1 << 3) as f32;  // Divide by 2^9
+                // Scale the combined value to represent the fixed-point with 9 bits
+                let scaled_value = (combined_value as f32) / (1 << 13) as f32;  // Divide by 2^9
 
-            func_truth_table.push(sigmoid(scaled_value));
+                func_truth_table.push(sigmoid(scaled_value));
+            }
         }
-    }
         
         // Split into 16 parts
-        for i in 0..16 {
-            let temp_slice = &func_truth_table[i*(func_truth_table.len()/16)..(i+1)*(func_truth_table.len()/16)];
+        for i in 0..32 {
+            let temp_slice = &func_truth_table[i*(func_truth_table.len()/32)..(i+1)*(func_truth_table.len()/32)];
             // println!("{}", i);
             // for j in 0..10 {println!("{}", temp_slice[j]);}
             write_file(&format!("../data/func_database/slice_{}.bin", i), &temp_slice);

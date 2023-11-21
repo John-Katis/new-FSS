@@ -178,7 +178,7 @@ impl<T> DPFKey<T> where T: prg::FromRng + Clone + Group + std::fmt::Debug
         word
     }
 
-// ----- ----- ----- ----- ----- newly added ----- ----- ----- ----- -----
+    // ----- ----- ----- ----- ----- newly added ----- ----- ----- ----- -----
     pub fn evalAll(&self) -> Vec<T> {
         let mut y_vec: Vec<T> = Vec::new();        
         let mut res: T;
