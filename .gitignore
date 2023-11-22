@@ -5,6 +5,6 @@
 
 # Produced at compile time
 /pika/frontend/target
-/pika/frontend/Cargo.log
+/pika/frontend/Cargo.lock
 
 /access_token.txt
