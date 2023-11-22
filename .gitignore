@@ -7,4 +7,5 @@
 /pika/frontend/target
 /pika/frontend/Cargo.lock
 
+# Local secret
 /access_token.txt
