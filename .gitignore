@@ -1,7 +1,7 @@
 # Produced at runtime
-/pika/data/*.bin
-/pika/data/func_database/*.bin
-/pika/test/*.bin
+/pika/data/**.bin
+/pika/data/func_database/**.bin
+/pika/test/**.bin
 
 # Produced at compile time
 /pika/frontend/target

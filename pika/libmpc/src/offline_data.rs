@@ -16,6 +16,10 @@ use std::f32::consts::E;
 use serde::de::DeserializeOwned;
 
 pub const INTERVALS_AMOUNT:usize = 1000;
+pub const total_numbers:i32 = 1 << 16;
+pub const integer_bits:i32 = 7;
+pub const float_bits:i32 = 9;
+pub const total_bits:usize = integer_bits as usize + float_bits as usize;
 
 
 fn write_file<T: serde::ser::Serialize>(path:&str, value:&T){
@@ -97,32 +101,45 @@ impl BasicOffline{
         
         // Generate w (correction bit) -> w=1 if final layer control bit t0=1 else w=-1
 
-
  //Offline-Step2. SIGMOID TRUTH TABLE - should be created at each communicating side, here it takes to long to store (from c.40s to 200 with some more statements)
 
         let mut func_truth_table: Vec<f32> = Vec::new();
+        // let mut scaled_values_vec: Vec<f32> = Vec::new();
 
-        // Iterate over all possible 7-bit integer parts
-        // All numbers from 100...00(1 followed by all 0s) are considered negative numbers
-        for integer_part in 0..(1 << 19) {
-            let progress = integer_part  * 100 / (1 << 19);
-            println!("{}", progress);
-            for floating_part in 0..(1 << 13) {
-            
-                let combined_value = (integer_part << 13) | floating_part; // | is logical or operation
+        for i in 0..total_numbers {
+            let integer_part = i >> float_bits;
+            let fractional_part = i & ((1 << float_bits) - 1);
 
-                // Scale the combined value to represent the fixed-point with 9 bits
-                let scaled_value = (combined_value as f32) / (1 << 13) as f32;  // Divide by 2^9
+            let combined_value = (integer_part << float_bits) | fractional_part;
 
-                func_truth_table.push(sigmoid(scaled_value));
-            }
+            // Calculate the corresponding f32 value
+            // FIXME at index 0 and 32768 it is both times 0 (or -0) with sigmoid 0.5 (exact)
+            let scaled_value = combined_value as f32 / (1 << float_bits) as f32;
+            let f32_value = if i < total_numbers / 2 {
+                scaled_value
+            } else {
+                -(scaled_value / (1 << 6) as f32) + 1.0
+            };
+
+            // println!(
+            //     "f32 value: {} (binary representation: {:07b} | {:09b})",
+            //     f32_value, integer_part, fractional_part
+            // );
+
+            // scaled_values_vec.push(f32_value);
+            func_truth_table.push(sigmoid(f32_value));
         }
-        
+
+        // println!("Number {} || Sigmoid {}", scaled_values_vec[0], func_truth_table[0]);
+        // for k in 32767..32778 {
+        //     println!("Number {} || Sigmoid {}", scaled_values_vec[k], func_truth_table[k]);
+        // }
+
         // Split into 16 parts
-        for i in 0..32 {
-            let temp_slice = &func_truth_table[i*(func_truth_table.len()/32)..(i+1)*(func_truth_table.len()/32)];
-            // println!("{}", i);
-            // for j in 0..10 {println!("{}", temp_slice[j]);}
+        for i in 0..total_bits {
+            let temp_slice = &func_truth_table[
+                i*(func_truth_table.len()/total_bits)..(i+1)*(func_truth_table.len()/total_bits)
+            ];
             write_file(&format!("../data/func_database/slice_{}.bin", i), &temp_slice);
         }
     
