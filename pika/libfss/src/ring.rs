@@ -4,12 +4,12 @@ use serde::Deserialize;
 use serde::Serialize;
 use std::cmp::Ordering;
 use std::convert::TryInto;
-use std::u32;
+use std::u16;
 use std::ops::{Add, Sub, Mul};
-
+// TODO final check for types and sizes (16 bit input)
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct RingElm {
-    value: u32,
+    value: u16,
 }
 
 impl Add for RingElm {
@@ -48,8 +48,8 @@ impl RingElm {
         print!("{} ", self.value);
     }
 
-    pub fn to_u32(&self) -> Option<u32> {
-        self.value.to_u32()
+    pub fn to_u16(&self) -> Option<u16> {
+        self.value.to_u16()
     }
 
     pub fn to_u8_vec(&self) -> Vec<u8> {
@@ -59,9 +59,9 @@ impl RingElm {
 }
 
 /*******/
-impl From<u32> for RingElm {
+impl From<u16> for RingElm {
     #[inline]
-    fn from(inp: u32) -> Self {
+    fn from(inp: u16) -> Self {
         RingElm {
             value: inp,
         }
@@ -71,11 +71,11 @@ impl From<u32> for RingElm {
 impl From<Vec<u8>> for RingElm {
     #[inline]
     fn from(bytes:Vec<u8>) -> Self {
-        if bytes.len() != 4 {
-            panic!("Invalid conversion: Vec<u8> must be exactly 4 bytes");
+        if bytes.len() != 2 {
+            panic!("Invalid conversion: Vec<u8> must be exactly 2 bytes");
         }
         RingElm {
-            value: u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]),
+            value: u16::from_be_bytes([bytes[0], bytes[1]]),
         }
     }
 }
@@ -122,14 +122,14 @@ impl crate::Group for RingElm {
 
      #[inline]
     fn negate(&mut self) {
-        self.value = u32::MAX - &self.value+1;
+        self.value = u16::MAX - &self.value+1;
     }
 }
 
 impl crate::prg::FromRng for RingElm {
     #[inline]
     fn from_rng(&mut self, rng: &mut impl rand::Rng) {
-        self.value = rng.next_u32();
+        self.value = rng.next_u16();
     }
 }
 

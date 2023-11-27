@@ -12,9 +12,8 @@ use bincode::Error;
 use std::fs::File;
 use std::io::Write;
 use std::io::Read;
-use std::f32::consts::E;
 use serde::de::DeserializeOwned;
-
+// TODO final check for types and sizes (16 bit input)
 pub const INTERVALS_AMOUNT:usize = 1000;
 pub const total_numbers:i32 = 1 << 16;
 pub const integer_bits:i32 = 7;
@@ -73,7 +72,7 @@ impl BasicOffline{
         let r_bits = stream.next_bits(input_bits);
         //let r_bits0 = stream.next_bits(input_bits);
 
-        let beta = RingElm::from(1u32);
+        let beta = RingElm::from(1u16);
 
         let mut dpf_0: Vec<DPFKey<RingElm>> = Vec::new();
         let mut dpf_1: Vec<DPFKey<RingElm>> = Vec::new();
@@ -99,7 +98,7 @@ impl BasicOffline{
         dpf_0.push(dpf_key0);
         dpf_1.push(dpf_key1);
         
-        // Generate w (correction bit) -> w=1 if final layer control bit t0=1 else w=-1
+        // TODO Generate w (correction bit) -> w=1 if final layer control bit t0=1 else w=-1
 
  //Offline-Step2. SIGMOID TRUTH TABLE - should be created at each communicating side, here it takes to long to store (from c.40s to 200 with some more statements)
 
@@ -113,7 +112,7 @@ impl BasicOffline{
             let combined_value = (integer_part << float_bits) | fractional_part;
 
             // Calculate the corresponding f32 value
-            // FIXME at index 0 and 32768 it is both times 0 (or -0) with sigmoid 0.5 (exact)
+            // FIXME ?? at index 0 and 32768 it is both times 0 (or -0) with sigmoid 0.5 (exact)
             let scaled_value = combined_value as f32 / (1 << float_bits) as f32;
             let f32_value = if i < total_numbers / 2 {
                 scaled_value

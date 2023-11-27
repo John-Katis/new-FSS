@@ -11,7 +11,7 @@ use fss::Group;
 //use async_trait::async_trait;
 use std::time::Instant;
 use std::time::Duration;
-
+// TODO final check for types and sizes (16 bit input)
 // #[derive(Clone)]
 pub struct NetInterface{
     //pub listener: TcpListener,
@@ -56,6 +56,7 @@ impl NetInterface{
         }
     }
     
+    // TODO use (Jannis)
     pub async fn reset_timer(&mut self){
         self.timer = Instant::now();
     }
@@ -219,7 +220,7 @@ impl NetInterface{
         //     }        
         // }
 
-        //TODO: This is only what happend in theory.
+        //TODO: This is only what happend in theory. (Nan)
         self.rounds_occured+=1;
 
         let decoded_bool_vec = u8_vec_to_bool_vec(&buf, msg.len());
@@ -230,8 +231,8 @@ impl NetInterface{
     pub async fn exchange_ring_vec(&mut self, msg: Vec<RingElm>) -> Vec<RingElm>{
         let mut x_msg: Vec<u8> = Vec::<u8>::new();
         for e in &msg{
-            x_msg.append(&mut e.to_u32().unwrap().to_be_bytes().to_vec());
-        }//convert u32 stream to u8 stream
+            x_msg.append(&mut e.to_u16().unwrap().to_be_bytes().to_vec());
+        }//convert u16 stream to u8 stream
 
         let xmsg_len = x_msg.len();
         let mut buf: Vec<u8> = vec![0; xmsg_len];
@@ -260,17 +261,17 @@ impl NetInterface{
             }        
         }
         self.rounds_occured+=1;
-
+        // FIXME potential problem
         let mut r: Vec<RingElm> = msg;
-        for i in 0..xmsg_len/4{
-            let mut ybuf: [u8; 4]= [0; 4];
-            for j in 0..4{
-                ybuf[j] = buf[i*4+j];
+        for i in 0..xmsg_len/2{
+            let mut ybuf: [u8; 2]= [0; 2];
+            for j in 0..2{
+                ybuf[j] = buf[i*2+j];
             }
-            let e = RingElm::from(u32::from_be_bytes(ybuf));
+            let e = RingElm::from(u16::from_be_bytes(ybuf));
             r[i].add(&e);
         }
-        r     
+        r
     }
 
     pub async fn exchange_byte_vec(&mut self, msg: &Vec<u8>) -> Vec<u8>{

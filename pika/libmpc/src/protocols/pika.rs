@@ -6,7 +6,7 @@ use fss::BinElm;
 use crate::offline_data::*;
 use rayon::prelude::*;
 use std::sync::{Arc, Mutex};
-
+// TODO final check for types and sizes (16 bit input)
 // Import read_file() func from offline_data.rs
 use crate::offline_data::read_file;
 
@@ -15,7 +15,7 @@ pub async fn pika_eval(p: &mut MPCParty<BasicOffline>, x_share:&RingElm)->RingEl
     let mut ret = RingElm::zero();
 
     // Protocol 2(a) - reconstruct x=r-a(mod2^k) -> r: random val, a: secret sharing of user input
-    // FIXME - Something wrong here
+    // FIXME - Something wrong here - shares are the number and 0
     let mask = p.netlayer.exchange_ring_vec(p.offlinedata.a_share.to_vec()).await;
     let mut x = mask[0];
 
@@ -63,7 +63,7 @@ pub async fn pika_eval(p: &mut MPCParty<BasicOffline>, x_share:&RingElm)->RingEl
 fn load_func_db()->Vec<f32>{
     let mut ret: Vec<f32> = Vec::new();
 
-    for i in 0..32 {
+    for i in 0..16 {
         let mut temp: Vec<f32> = Vec::new();
         match read_file(&format!("../data/func_database/slice_{}.bin", i)) {
             Ok(value) => temp = value,
@@ -72,7 +72,6 @@ fn load_func_db()->Vec<f32>{
 
         ret.append(&mut temp)
     }
-
     ret
 }
 

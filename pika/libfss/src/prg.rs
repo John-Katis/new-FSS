@@ -29,7 +29,7 @@ const AES_KEY_SIZE: usize = 16;
 // AES block size in bytes. Always 16 bytes.
 pub const AES_BLOCK_SIZE: usize = 16;
 
-// XXX Todo try using 8-way parallelism
+// XXX Todo try using 8-way parallelism (Nan)
 pub struct FixedKeyPrgStream {
     aes: Aes128,
     ctr: __m128i,
@@ -342,9 +342,15 @@ impl FixedKeyPrgStream {
 }
 
 impl rand::RngCore for FixedKeyPrgStream {
-    fn next_u32(&mut self) -> u32 {
-        rand_core::impls::next_u32_via_fill(self)
+    // FIXME - potential error here - is it enough that a random number is returned? (then this should be correct) (Jannis)
+    fn next_u16(&mut self) -> u16 {
+        let u32_result = rand_core::impls::next_u32_via_fill(self);
+        u32_result as u16
     }
+    
+    // fn next_u32(&mut self) -> u32 {
+    //     rand_core::impls::next_u32_via_fill(self)
+    // }
 
     fn next_u64(&mut self) -> u64 {
         rand_core::impls::next_u64_via_fill(self)

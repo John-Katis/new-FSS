@@ -115,8 +115,8 @@ pub fn vec_bool_to_string(vec_bool: &Vec<bool>) -> String {
     string
 }
 
-pub fn u32_to_bits_BE(nbits: usize, input: u32) -> Vec<bool> {
-    assert!(nbits <= 32);
+pub fn u16_to_bits_BE(nbits: usize, input: u16) -> Vec<bool> {
+    assert!(nbits <= 16);
 
     let mut out: Vec<bool> = Vec::new();
     for i in 0..nbits {
@@ -127,8 +127,8 @@ pub fn u32_to_bits_BE(nbits: usize, input: u32) -> Vec<bool> {
     out
 }
 
-pub fn u32_to_bits(nbits: usize, input: u32) -> Vec<bool> {
-    assert!(nbits <= 32);
+pub fn u16_to_bits(nbits: usize, input: u16) -> Vec<bool> {
+    assert!(nbits <= 16);
 
     let mut out: Vec<bool> = Vec::new();
     for i in 0..nbits {
@@ -141,28 +141,29 @@ pub fn u32_to_bits(nbits: usize, input: u32) -> Vec<bool> {
     out
 }
 
-pub fn bits_to_u32(bits: &[bool]) -> u32 {
-    assert!(bits.len() <= 32);
-    let mut out = 0u32;
+pub fn bits_to_u16(bits: &[bool]) -> u16 {
+    assert!(bits.len() <= 16);
+    let mut out = 0u16;
 
     for i in 0..bits.len() {
-        let b32: u32 = bits[i].into();
-        out |= b32 << i;
+        let b16: u16 = bits[i].into();
+        out |= b16 << i;
     }
     out
 }
 
-pub fn bits_to_u32_BE(bits: &[bool]) -> u32 {
-    assert!(bits.len() <= 32);
-    let mut out = 0u32;
+pub fn bits_to_u16_BE(bits: &[bool]) -> u16 {
+    assert!(bits.len() <= 16);
+    let mut out = 0u16;
 
     for i in 0..bits.len() {
-        let b32: u32 = bits[i].into();
-        out |= b32 << bits.len()-1-i;
+        let b16: u16 = bits[i].into();
+        out |= b16 << bits.len()-1-i;
     }
     out
 }
 
+// FIXME is this assert correct - will it create problems? - check function calls
 pub fn bits_to_u8_BE(bits: &[bool]) -> u8 {
     assert!(bits.len() <= 32);
     let mut out = 0u8;
@@ -188,7 +189,7 @@ pub fn string_to_bits(s: &str) -> Vec<bool> {
     let mut bits = vec![];
     let byte_vec = s.to_string().into_bytes();
     for byte in &byte_vec {
-        let mut b = crate::u32_to_bits(8, (*byte).into());
+        let mut b = crate::u16_to_bits(8, (*byte).into());
         bits.append(&mut b);
     }
     bits

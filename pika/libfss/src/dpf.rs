@@ -74,10 +74,6 @@ fn gen_cor_word(bit: bool, bits: &mut (bool, bool), seeds: &mut (prg::PrgSeed, p
 
 // NEWLY ADDED - Helper functions for evalAll method ----- ----- ----- ----- -----
 
-fn u32_to_boolean_vector(num: u32) -> Vec<bool> {
-    (0..32).map(|i| ((num >> i) & 1) == 1).rev().collect()
-}
-
 fn u16_to_boolean_vector(num: u16) -> Vec<bool> {
     (0..16).map(|i| ((num >> i) & 1) == 1).rev().collect()
 }
@@ -338,9 +334,9 @@ mod tests {
     fn evalCheck() {
         // let mut alpha = vec![true];
         // let mut alpha = vec![true,false];
-        let mut alpha = crate::u32_to_bits(3, 7);
+        let mut alpha = crate::u16_to_bits(3, 7);
 
-        let beta = RingElm::from(117u32);
+        let beta = RingElm::from(117u16);
         let (dpf_key0, dpf_key1) = DPFKey::gen(&alpha, &beta);
 
         {
