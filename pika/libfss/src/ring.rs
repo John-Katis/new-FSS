@@ -131,7 +131,10 @@ impl crate::Group for RingElm {
 
      #[inline]
     fn negate(&mut self) {
-        self.value = u16::MAX - &self.value; // FIXME overflow when word=0 || need wrapping add
+        let mut ret:u16 = u16::MAX;
+        ret = ret.wrapping_sub(self.value);
+        ret = ret.wrapping_add(1);
+        self.value = ret;
     }
 }
 

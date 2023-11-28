@@ -65,6 +65,7 @@ pub async fn pika_eval(p: &mut MPCParty<BasicOffline>, x_share:&RingElm)->RingEl
     // 3. See step 2(d)
     // 4. For finding u, I need to multiply -1^σ (by static casting?) with a RingElm and a f32 -> how can this be done? Should ring elements be a different type instead?
     // 5. Implemented From<f32> in ring.rs -> should all ring element values be floats?
+    // 6. Also ring.rs -> i return the random number as u16 (not u32 as in Rust implementation), is that ok?
     // ^^^ QUESTIONS ^^^
 
     ret
