@@ -122,7 +122,7 @@ impl crate::Group for RingElm {
 
      #[inline]
     fn negate(&mut self) {
-        self.value = u32::MAX - &self.value+1;
+        self.value = u32::MAX - &self.value;
     }
 }
 
