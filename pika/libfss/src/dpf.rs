@@ -183,7 +183,7 @@ impl<T> DPFKey<T> where T: prg::FromRng + Clone + Group + std::fmt::Debug
         
         let max_value: u16 = u16::MAX;
         let half_value: u16 = max_value / 2;
-        
+
         for i in 0..2 {
             // Start from 0 and 1^k/2 outside of iteration
             let init_16b: u16 = i*(half_value+1);
