@@ -122,7 +122,7 @@ impl crate::Group for RingElm {
 
      #[inline]
     fn negate(&mut self) {
-        self.value = u16::MAX - &self.value+1;
+        self.value = u16::MAX - &self.value+1; // FIXME? this has thrown an overflow error once!!!
     }
 }
 

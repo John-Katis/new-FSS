@@ -36,7 +36,7 @@ impl CondEvalKey
         stream.set_key(&root_seed.key);
 
         let alpha_bits = stream.next_bits(32usize);
-        let (p_bound,q_bound) = (RingElm::zero(), RingElm::from((1<<31)-1));
+        let (p_bound,q_bound) = (RingElm::zero(), RingElm::from((1<<15)-1));
         let ( key0,  mut key1) = ICKey::gen(&alpha_bits,&p_bound, &q_bound);
         key1.key_idx=false;
 
