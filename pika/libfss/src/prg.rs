@@ -341,16 +341,11 @@ impl FixedKeyPrgStream {
     }
 }
 
-impl rand::RngCore for FixedKeyPrgStream {
-    // FIXME - potential error here - is it enough that a random number is returned? (then this should be correct) (Jannis)
-    fn next_u16(&mut self) -> u16 {
-        let u32_result = rand_core::impls::next_u32_via_fill(self);
-        u32_result as u16
+impl rand::RngCore for FixedKeyPrgStream {   
+    fn next_u32(&mut self) -> u32 {
+        let u_32_num = rand_core::impls::next_u32_via_fill(self);
+        u_32_num as u32
     }
-    
-    // fn next_u32(&mut self) -> u32 {
-    //     rand_core::impls::next_u32_via_fill(self)
-    // }
 
     fn next_u64(&mut self) -> u64 {
         rand_core::impls::next_u64_via_fill(self)

@@ -11,7 +11,7 @@ use fss::Group;
 //use async_trait::async_trait;
 use std::time::Instant;
 use std::time::Duration;
-// TODO final check for types and sizes (16 bit input)
+
 // #[derive(Clone)]
 pub struct NetInterface{
     //pub listener: TcpListener,
@@ -261,7 +261,7 @@ impl NetInterface{
             }        
         }
         self.rounds_occured+=1;
-        // FIXME potential problem
+        // FIXME potential problem - the iteration should happen over 2 bytes for each ring element
         let mut r: Vec<RingElm> = msg;
         for i in 0..xmsg_len/2{
             let mut ybuf: [u8; 2]= [0; 2];

@@ -6,7 +6,7 @@ use std::cmp::Ordering;
 use std::convert::TryInto;
 use std::u16;
 use std::ops::{Add, Sub, Mul};
-// TODO final check for types and sizes (16 bit input)
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct RingElm {
     value: u16,
@@ -129,7 +129,7 @@ impl crate::Group for RingElm {
 impl crate::prg::FromRng for RingElm {
     #[inline]
     fn from_rng(&mut self, rng: &mut impl rand::Rng) {
-        self.value = rng.next_u16();
+        self.value = rng.next_u32() as u16; // FIXME can a trait in rng return a u16 type?
     }
 }
 

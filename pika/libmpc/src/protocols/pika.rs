@@ -6,7 +6,7 @@ use fss::BinElm;
 use crate::offline_data::*;
 use rayon::prelude::*;
 use std::sync::{Arc, Mutex};
-// TODO final check for types and sizes (16 bit input)
+
 // Import read_file() func from offline_data.rs
 use crate::offline_data::read_file;
 

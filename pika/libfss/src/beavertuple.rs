@@ -84,7 +84,7 @@ impl BeaverTuple{
         container
     }
     // FIXME potential problem with the iteration if it has to do with the 32 bit input
-    // TODO - changed to accodate 16 bits / observe compilation errors
+    // TODO - changed to accomodate 16 bits / observe compilation errors
     /*The multiplication of [alpha] x [beta], the values of beaver_share are [a], [b], and [ab], d and e are the reconstructed values of alpha-a, beta-b*/
     pub fn beaver_mul1(&mut self, is_server: bool, otherHalf:&Vec<u8> ) -> RingElm{
         assert_eq!(otherHalf.len(),8usize);
