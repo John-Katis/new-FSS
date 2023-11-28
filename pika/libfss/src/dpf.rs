@@ -67,6 +67,8 @@ fn gen_cor_word(bit: bool, bits: &mut (bool, bool), seeds: &mut (prg::PrgSeed, p
         }
 
         *bits.get_mut(b) = newbit;
+        println!("NEWBIT {}", newbit);
+        println!("CW: {:?}", cw);
     }
 
     cw
@@ -112,8 +114,10 @@ impl<T> DPFKey<T> where T: prg::FromRng + Clone + Group + std::fmt::Debug
                 if bits.1 {
                     lastWord.negate();
                 }
+                println!("{:?}", bits);
+                println!("{:?}", lastWord);
             }
-        }
+        } // NEED TO EXTRACT t0 (ν) || w=1 if t0(v)=1 else w=1 -> generate shares
 
         (
             DPFKey::<T> {

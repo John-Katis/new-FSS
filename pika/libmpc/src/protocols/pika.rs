@@ -7,10 +7,6 @@ use crate::offline_data::*;
 use rayon::prelude::*;
 use std::sync::{Arc, Mutex};
 
-// Import read_file() func from offline_data.rs
-use crate::offline_data::read_file;
-
-
 pub async fn pika_eval(p: &mut MPCParty<BasicOffline>, x_share:&RingElm)->RingElm{
     let mut ret = RingElm::zero();
 
@@ -39,24 +35,38 @@ pub async fn pika_eval(p: &mut MPCParty<BasicOffline>, x_share:&RingElm)->RingEl
     let func_database = load_func_db(); // -> load works but store is not done correctly -> load 16 files
     println!("FUNC DB LENGTH {}", func_database.len());
 
-    // let mut u_vec: Vec<T> = Vec::new();
+    let mut u: RingElm = RingElm::from(0);
+    // let mut u: f32 = 0.0;
 
-    // // need ring elements that represent the correct domain (16 bits)
-    // for i in 0..y_vec.len() {
-    //     let shift = i + x.value;
-    //     u_vec.push(&y_vec[shift]);
-    // }
+    // Protocol 2(c) - compute uσ then u
+    for i in 0..y_vec.len() {
+        // ##### ##### WAY 1 - u as RingElm ##### #####
+        let shift_index = RingElm::from(i as u16) + x;
+        let y_elem = y_vec[shift_index.to_u16().unwrap_or_default() as usize];
+        // CURRENTLY: converting float values from func_database to ring elements as u16 (not good)
+        // REQUIRED: Inner product of function database and evalAll output
+        u = u + y_vec[shift_index.to_u16().unwrap_or_default() as usize] * RingElm::from(func_database[i]); // need the -1^σ
 
-    // for i in 0..p.offlinedata.k_share.len(){
+        // // ##### ##### WAY 2 - u as float ##### #####
+        // let shift_index = RingElm::from(i as u16) + x;
+        // let y_elem = y_vec[shift_index.to_u16().unwrap_or_default() as usize];
+        // // CURRENTLY: converting float values from func_database to ring elements as u16 (not good)
+        // // REQUIRED: Inner product of function database and evalAll output
+        // u = u + y_elem.to_u16().unwrap_or_default() as f32 * func_database[i]; // need the -1^σ
+    }
 
-    //     let mask = p.exchange_ring_vec(cur+alpha);
+    println!("u VALUE (WITHOUT -1^σ)");
+    u.print();
+    println!("");
 
-    //     let cur: RingElm = x_share + i;
+    // vvv QUESTIONS vvv
+    // 1. See dpf, I have the bits in isolation but which one defines t0(v)
+    // 2. How to do -1^σ (always has output of -1)
+    // 3. See step 2(d)
+    // 4. For finding u, I need to multiply -1^σ (by static casting?) with a RingElm and a f32 -> how can this be done? Should ring elements be a different type instead?
+    // 5. Implemented From<f32> in ring.rs -> should all ring element values be floats?
+    // ^^^ QUESTIONS ^^^
 
-    //     let word = dpf_key_list[i].eval(&cur); // -> The input is just an index of the key - NOT ANOTHER LIST (??)
-    //     word *= lOCAL_DATABSE[i]; 
-    //     ret += word;
-    // }
     ret
 }
 
@@ -75,7 +85,7 @@ fn load_func_db()->Vec<f32>{
     ret
 }
 
-// Should go from 16 to 9 or 14 and check how to calculate scale in paper
+// The function database, evalAll and calculation here must happen of 2^k (not 2^l which is the input domain)
 fn quantize_input(input_domain_x_share:&RingElm)->RingElm{
     let mut bound_domain_x_share = RingElm::zero();
 
