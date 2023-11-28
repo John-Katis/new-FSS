@@ -4,8 +4,8 @@
 /pika/test/**.bin
 
 # Produced at compile time
-/pika/frontend/target
-/pika/frontend/Cargo.lock
+**/target
+**/Cargo.lock
 
 # Local secret
 /access_token.txt
