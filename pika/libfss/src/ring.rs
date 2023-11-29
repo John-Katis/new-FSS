@@ -9,7 +9,7 @@ use std::ops::{Add, Sub, Mul};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct RingElm {
-    value: u16,
+    value: u16, // TODO this should be u32 - output domain in f32 -> conversion after pika_eval!!!
 }
 
 impl Add for RingElm {

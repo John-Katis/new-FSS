@@ -114,6 +114,7 @@ impl<T> DPFKey<T> where T: prg::FromRng + Clone + Group + std::fmt::Debug
                 if bits.1 {
                     lastWord.negate();
                 }
+                // TODO bits.0 is t0v
                 println!("{:?}", bits);
                 println!("{:?}", lastWord);
             }
@@ -179,6 +180,7 @@ impl<T> DPFKey<T> where T: prg::FromRng + Clone + Group + std::fmt::Debug
     }
 
     // ----- ----- ----- ----- ----- newly added ----- ----- ----- ----- -----
+    // TODO
     pub fn evalAll(&self) -> Vec<T> {
         let mut y_vec: Vec<T> = Vec::new();        
         let mut res: T;

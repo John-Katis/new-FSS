@@ -43,14 +43,14 @@ pub async fn pika_eval(p: &mut MPCParty<BasicOffline>, x_share:&RingElm)->RingEl
         // ##### ##### WAY 1 - u as RingElm ##### #####
         let shift_index = RingElm::from(i as u16) + x;
         let y_elem = y_vec[shift_index.to_u16().unwrap_or_default() as usize];
-        // CURRENTLY: converting float values from func_database to ring elements as u16 (not good)
+        // CURRENTLY: converting float values from func_database to ring elements as u16 (probably the correct way - need the wrapping around)
         // REQUIRED: Inner product of function database and evalAll output
         u = u + y_vec[shift_index.to_u16().unwrap_or_default() as usize] * RingElm::from(func_database[i]); // need the -1^σ
 
         // // ##### ##### WAY 2 - u as float ##### #####
         // let shift_index = RingElm::from(i as u16) + x;
         // let y_elem = y_vec[shift_index.to_u16().unwrap_or_default() as usize];
-        // // CURRENTLY: converting float values from func_database to ring elements as u16 (not good)
+        // // CURRENTLY: converting ring elements from y to f32 - not good, the output is a huge, unsusable number
         // // REQUIRED: Inner product of function database and evalAll output
         // u = u + y_elem.to_u16().unwrap_or_default() as f32 * func_database[i]; // need the -1^σ
     }
@@ -62,11 +62,12 @@ pub async fn pika_eval(p: &mut MPCParty<BasicOffline>, x_share:&RingElm)->RingEl
     // vvv QUESTIONS vvv
     // 1. See dpf, I have the bits in isolation but which one defines t0(v)
     // 2. How to do -1^σ (always has output of -1)
-    // 3. See step 2(d)
+    // 3. See step 2(d) in paper
     // 4. For finding u, I need to multiply -1^σ (by static casting?) with a RingElm and a f32 -> how can this be done? Should ring elements be a different type instead?
     // 5. Implemented From<f32> in ring.rs -> should all ring element values be floats?
     // 6. Also ring.rs -> i return the random number as u16 (not u32 as in Rust implementation), is that ok?
-    // ^^^ QUESTIONS ^^^
+    // ^^^ QUESTIONS ^^^4
+    // NOTE the 16 bit input domain is not valid for pika - the func database should be computed for the bounded domain k (so 16 bit is currently the bounded domain)
 
     ret
 }
