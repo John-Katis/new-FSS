@@ -16,6 +16,10 @@ use std::f32::consts::E;
 use serde::de::DeserializeOwned;
 
 pub const INTERVALS_AMOUNT:usize = 1000;
+pub const TOTAL_NUMBERS:u32 = u32::MAX;
+pub const INTEGER_BITS:u32 = 19;
+pub const FLOAT_BITS:u32 = 13;
+pub const TOTAL_BITS:usize = INTEGER_BITS as usize + FLOAT_BITS as usize;
 
 
 fn write_file<T: serde::ser::Serialize>(path:&str, value:&T){
@@ -104,23 +108,22 @@ impl BasicOffline{
 
         // Iterate over all possible 7-bit integer parts
         // All numbers from 100...00(1 followed by all 0s) are considered negative numbers
-        for integer_part in 0..(1 << 19) {
-            let progress = integer_part  * 100 / (1 << 19);
-            println!("{}", progress);
-            for floating_part in 0..(1 << 13) {
+        for integer_part in 0..(1 << INTEGER_BITS) {
+            // let progress = integer_part  * 100 / (1 << INTEGER_BITS);
+            // println!("{}", progress);
+            for floating_part in 0..(1 << FLOAT_BITS) {
             
-                let combined_value = (integer_part << 13) | floating_part; // | is logical or operation
+                let combined_value = (integer_part << FLOAT_BITS) | floating_part; // | is logical or operation
 
                 // Scale the combined value to represent the fixed-point with 9 bits
-                let scaled_value = (combined_value as f32) / (1 << 13) as f32;  // Divide by 2^9
+                let scaled_value = (combined_value as f32) / (1 << FLOAT_BITS) as f32;  // Divide by 2^9
 
                 func_truth_table.push(sigmoid(scaled_value));
             }
         }
         
-        // Split into 16 parts
-        for i in 0..32 {
-            let temp_slice = &func_truth_table[i*(func_truth_table.len()/32)..(i+1)*(func_truth_table.len()/32)];
+        for i in 0..TOTAL_BITS {
+            let temp_slice = &func_truth_table[i*(func_truth_table.len()/TOTAL_BITS)..(i+1)*(func_truth_table.len()/TOTAL_BITS)];
             // println!("{}", i);
             // for j in 0..10 {println!("{}", temp_slice[j]);}
             write_file(&format!("../data/func_database/slice_{}.bin", i), &temp_slice);

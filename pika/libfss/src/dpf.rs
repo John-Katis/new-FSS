@@ -78,10 +78,6 @@ fn u32_to_boolean_vector(num: u32) -> Vec<bool> {
     (0..32).map(|i| ((num >> i) & 1) == 1).rev().collect()
 }
 
-fn u16_to_boolean_vector(num: u16) -> Vec<bool> {
-    (0..16).map(|i| ((num >> i) & 1) == 1).rev().collect()
-}
-
 fn find_first_difference_index(v1: &[bool], v2: &[bool]) -> usize {
     for (i, (b1, b2)) in v1.iter().zip(v2.iter()).enumerate() {
         if b1 != b2 {
@@ -118,7 +114,7 @@ impl<T> DPFKey<T> where T: prg::FromRng + Clone + Group + std::fmt::Debug
                 }
             }
         }
-
+        // TODO get bits.0 as t0v -> generate shares
         (
             DPFKey::<T> {
                 key_idx: false,
@@ -185,26 +181,26 @@ impl<T> DPFKey<T> where T: prg::FromRng + Clone + Group + std::fmt::Debug
         let mut prev_state: EvalState;
         let mut prev_num_bool: Vec<bool>;
         
-        let max_value: u16 = u16::MAX;
-        let half_value: u16 = max_value / 2;
+        let max_value: u32 = u32::MAX;
+        let half_value: u32 = max_value / 2;
         
         for i in 0..2 {
             // Start from 0 and 1^k/2 outside of iteration
-            let init_16b: u16 = i*(half_value+1);
-            let mut init_16b_bool_vec: Vec<bool> = u16_to_boolean_vector(init_16b);
+            let init_32b: u32 = i*(half_value+1);
+            let mut init_32b_bool_vec: Vec<bool> = u32_to_boolean_vector(init_32b);
 
-            let iter_start: u16 = i*(half_value+1);
-            let iter_end: u16 = iter_start + half_value;
+            let iter_start: u32 = i*(half_value+1);
+            let iter_end: u32 = iter_start + half_value;
 
-            let (res, state) = Self::stateful_eval_no_prev_state(&self, &init_16b_bool_vec);
-            // println!("{} CORR {:?} COMP {:?}", init_16b, res, Self::eval(&self, &init_16b_bool_vec));
+            let (res, state) = Self::stateful_eval_no_prev_state(&self, &init_32b_bool_vec);
+            // println!("{} CORR {:?} COMP {:?}", init_32b, res, Self::eval(&self, &init_32b_bool_vec));
             prev_state = state;
             y_vec.push(res);
 
-            prev_num_bool = init_16b_bool_vec;
+            prev_num_bool = init_32b_bool_vec;
             
             for num in iter_start..iter_end {
-                let mut num_bool_vec: Vec<bool> = u16_to_boolean_vector(num);
+                let mut num_bool_vec: Vec<bool> = u32_to_boolean_vector(num);
                 let idx_diff = find_first_difference_index(&prev_num_bool, &num_bool_vec);
 
                 let (res, state) = Self::stateful_eval(&self, &num_bool_vec, &prev_state, idx_diff);

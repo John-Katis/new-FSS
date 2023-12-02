@@ -10,16 +10,17 @@ use std::sync::{Arc, Mutex};
 // Import read_file() func from offline_data.rs
 use crate::offline_data::read_file;
 
+pub const TOTAL_BITS:usize = 32;
+
 
 pub async fn pika_eval(p: &mut MPCParty<BasicOffline>, x_share:&RingElm)->RingElm{
     let mut ret = RingElm::zero();
 
     // Protocol 2(a) - reconstruct x=r-a(mod2^k) -> r: random val, a: secret sharing of user input
-    // FIXME - Something wrong here
     let mask = p.netlayer.exchange_ring_vec(p.offlinedata.a_share.to_vec()).await;
     let mut x = mask[0];
 
-    println!("MASK VALUE:"); // mask is 3561744742
+    println!("MASK VALUE:");
     x.print();
     println!("");
 
@@ -36,34 +37,47 @@ pub async fn pika_eval(p: &mut MPCParty<BasicOffline>, x_share:&RingElm)->RingEl
     let y_vec = p.offlinedata.k_share[0].evalAll();
     println!("y_vec LENGTH {:?}",y_vec.len());
 
-    let func_database = load_func_db(); // -> load works but store is not done correctly -> load 16 files
+    let func_database = load_func_db(); // -> load works but store is not done correctly -> load 32 files
     println!("FUNC DB LENGTH {}", func_database.len());
 
-    // let mut u_vec: Vec<T> = Vec::new();
+    let mut u: RingElm = RingElm::from(0);
 
-    // // need ring elements that represent the correct domain (16 bits)
-    // for i in 0..y_vec.len() {
-    //     let shift = i + x.value;
-    //     u_vec.push(&y_vec[shift]);
-    // }
+    // Protocol 2(c) - compute uσ then u
+    for i in 0..y_vec.len() {
+        // TODO try x.to_u32.unwrap_or_default() + i as u32 -> shift_index as usize or as it is
+        let shift_index = i + x.to_u32().unwrap_or_default() as usize;
+        let y_elem = y_vec[shift_index];
+    
+        u = u + y_vec[shift_index] * RingElm::from(func_database[i]);
+    }
 
-    // for i in 0..p.offlinedata.k_share.len(){
+    // TODO u = -u if not is_server || can be modelled in the main.rs as well as a subtractio??? otherwise I have type mismatches
 
-    //     let mask = p.exchange_ring_vec(cur+alpha);
+    println!("u VALUE (WITHOUT -1^σ)");
+    u.print();
+    println!("");
 
-    //     let cur: RingElm = x_share + i;
+    // vvv QUESTIONS vvv
+    // 1. See dpf, I have the bits in isolation but which one defines t0(v)
+    // 3. See step 2(d) in paper
+    // 4. For finding u, I need to multiply -1^σ (by static casting?) with a RingElm and a f32 -> how can this be done? Should ring elements be a different type instead?
+    // 5. Implemented From<f32> in ring.rs -> should all ring element values be floats?
+    // ^^^ QUESTIONS ^^^
+    // TODOs 
+    // 1. w bit from dfp.rs (see TODO)
+    // 2. fix to u32 for RingElm and f32 for input domain (Done)
+    // 3. Implement the full calculation above!
+    // 4. -1^s -> get s from p.netlayer.is_server?? -> mpc_platform.rs/NetInterface
+    // 5. Beaver triple with w and u -> ret
+    // 6. Test correctness
 
-    //     let word = dpf_key_list[i].eval(&cur); // -> The input is just an index of the key - NOT ANOTHER LIST (??)
-    //     word *= lOCAL_DATABSE[i]; 
-    //     ret += word;
-    // }
     ret
 }
 
 fn load_func_db()->Vec<f32>{
     let mut ret: Vec<f32> = Vec::new();
 
-    for i in 0..32 {
+    for i in 0..TOTAL_BITS {
         let mut temp: Vec<f32> = Vec::new();
         match read_file(&format!("../data/func_database/slice_{}.bin", i)) {
             Ok(value) => temp = value,
@@ -76,7 +90,6 @@ fn load_func_db()->Vec<f32>{
     ret
 }
 
-// Should go from 16 to 9 or 14 and check how to calculate scale in paper
 fn quantize_input(input_domain_x_share:&RingElm)->RingElm{
     let mut bound_domain_x_share = RingElm::zero();
 

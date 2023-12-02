@@ -59,6 +59,15 @@ impl RingElm {
 }
 
 /*******/
+impl From<f32> for RingElm {
+    #[inline]
+    fn from(inp: f32) -> Self {
+        RingElm {
+            value: inp as u32,
+        }
+    }
+}
+
 impl From<u32> for RingElm {
     #[inline]
     fn from(inp: u32) -> Self {
