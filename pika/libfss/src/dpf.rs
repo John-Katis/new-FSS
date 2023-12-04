@@ -90,7 +90,7 @@ fn find_first_difference_index(v1: &[bool], v2: &[bool]) -> usize {
 
 impl<T> DPFKey<T> where T: prg::FromRng + Clone + Group + std::fmt::Debug
 {
-    pub fn gen(alpha_bits: &[bool], value:&T) -> (DPFKey<T>, DPFKey<T>) {
+    pub fn gen(alpha_bits: &[bool], value:&T) -> (DPFKey<T>, DPFKey<T>, bool) {
         // let root_seeds = (prg::PrgSeed::zero(), prg::PrgSeed::one());
         let root_seeds = (prg::PrgSeed::random(), prg::PrgSeed::random());
         let root_bits = (false, true);
@@ -114,7 +114,6 @@ impl<T> DPFKey<T> where T: prg::FromRng + Clone + Group + std::fmt::Debug
                 }
             }
         }
-        // TODO get bits.0 as t0v -> generate shares
         (
             DPFKey::<T> {
                 key_idx: false,
@@ -128,6 +127,7 @@ impl<T> DPFKey<T> where T: prg::FromRng + Clone + Group + std::fmt::Debug
                 cor_words: cor_words,
                 word:  lastWord,
             },
+            bits.0
         )
     }
 
@@ -200,6 +200,7 @@ impl<T> DPFKey<T> where T: prg::FromRng + Clone + Group + std::fmt::Debug
             prev_num_bool = init_32b_bool_vec;
             
             for num in iter_start..iter_end {
+                println!("EVAL ALL PROGRESS: {}", num);
                 let mut num_bool_vec: Vec<bool> = u32_to_boolean_vector(num);
                 let idx_diff = find_first_difference_index(&prev_num_bool, &num_bool_vec);
 

@@ -56,6 +56,12 @@ pub trait FromRng {
     }
 }
 
+impl FromRng for bool {
+    fn from_rng(&mut self, stream: &mut (impl rand::Rng + rand_core::RngCore)) {
+        *self = stream.gen();
+    }
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PrgOutput {
     pub bits: (bool, bool),

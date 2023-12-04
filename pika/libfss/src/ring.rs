@@ -135,6 +135,38 @@ impl crate::Group for RingElm {
     }
 }
 
+impl crate::Group for bool {
+    #[inline]
+    fn zero() -> Self {
+        false
+    }
+
+    #[inline]
+    fn one() -> Self {
+        true
+    }
+
+    #[inline]
+    fn add(&mut self, other: &Self) {
+        *self = *self ^ other;
+    }
+
+    #[inline]
+    fn sub(&mut self, other: &Self) {
+        *self = *self ^ other;
+    }
+
+    #[inline]
+    fn mul(&mut self, other: &Self) {
+        *self = *self & other;
+    }
+
+     #[inline]
+    fn negate(&mut self) {
+        *self = !*self;
+    }
+}
+
 impl crate::prg::FromRng for RingElm {
     #[inline]
     fn from_rng(&mut self, rng: &mut impl rand::Rng) {

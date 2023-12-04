@@ -52,12 +52,10 @@ async fn main() {
     stream.set_key(&seed.key);
 
     // TODO Implement batch here (10^0 - 10^5 used in Pika paper with bad scalability)
+    // TODO generate correct shares (r1=rand from bits, r2=1-r1 or r2=negate(1)-r1 as RingElms) for x and w
     let x_share_bits = stream.next_bits(INPUT_BITS*2);
     let index =  if is_server {String::from("0")} else {String::from("1")};
     let index_ID = if is_server{0u8} else {1u8};
-
-    // let mut f_x = File::create(format!( "../test/x{}.bin", &index)).expect("create failed");
-    // f_x.write_all(&bincode::serialize(&x_share).expect("Serialize x-bool-share error")).expect("Write x-bool-share error.");
 
     let mut result:RingElm = RingElm::zero();
     let mut netlayer = NetInterface::new(is_server,LAN_ADDRESS).await;

@@ -34,40 +34,39 @@ pub async fn pika_eval(p: &mut MPCParty<BasicOffline>, x_share:&RingElm)->RingEl
     println!("");
 
     // Protocol 2(b) - compute yσ (EvalAll routine -> implement in DPF key)
+    // FIXME
     let y_vec = p.offlinedata.k_share[0].evalAll();
     println!("y_vec LENGTH {:?}",y_vec.len());
+    println!("y_vec elem1 {:?}",y_vec[0]);
 
-    let func_database = load_func_db(); // -> load works but store is not done correctly -> load 32 files
-    println!("FUNC DB LENGTH {}", func_database.len());
+    // let func_database = load_func_db(); // -> load works but store is not done correctly -> load 32 files
+    // println!("FUNC DB LENGTH {}", func_database.len());
 
-    let mut u: RingElm = RingElm::from(0);
+    // let mut u: RingElm = RingElm::from(0);
 
-    // Protocol 2(c) - compute uσ then u
-    for i in 0..y_vec.len() {
-        // TODO try x.to_u32.unwrap_or_default() + i as u32 -> shift_index as usize or as it is
-        let shift_index = i + x.to_u32().unwrap_or_default() as usize;
-        let y_elem = y_vec[shift_index];
-    
-        u = u + y_vec[shift_index] * RingElm::from(func_database[i]);
-    }
+    // // Protocol 2(c) - compute uσ then u
+    // for i in 0..y_vec.len() {
+    //     let progress = i / y_vec.len();
+    //     println!("STEP 2C PROGRESS: {}", progress);
+    //     let shift_index = i + x.to_u32().unwrap_or_default() as usize;
+    //     let y_elem = y_vec[shift_index];
+    //     if p.netlayer.is_server {
+    //         u = u + y_vec[shift_index] * RingElm::from(func_database[i]);
+    //     } else {
+    //         u = u + (y_vec[shift_index] * RingElm::from(func_database[i])).negate();
+    //     }
+    // }
 
-    // TODO u = -u if not is_server || can be modelled in the main.rs as well as a subtractio??? otherwise I have type mismatches
+    // // TODO u = -u if not is_server || can be modelled in the main.rs as well as a subtraction?? otherwise I have type mismatches
 
-    println!("u VALUE (WITHOUT -1^σ)");
-    u.print();
-    println!("");
+    // println!("u VALUE (WITHOUT -1^σ)");
+    // u.print();
+    // println!("");
 
-    // vvv QUESTIONS vvv
-    // 1. See dpf, I have the bits in isolation but which one defines t0(v)
-    // 3. See step 2(d) in paper
-    // 4. For finding u, I need to multiply -1^σ (by static casting?) with a RingElm and a f32 -> how can this be done? Should ring elements be a different type instead?
-    // 5. Implemented From<f32> in ring.rs -> should all ring element values be floats?
-    // ^^^ QUESTIONS ^^^
     // TODOs 
-    // 1. w bit from dfp.rs (see TODO)
-    // 2. fix to u32 for RingElm and f32 for input domain (Done)
-    // 3. Implement the full calculation above!
-    // 4. -1^s -> get s from p.netlayer.is_server?? -> mpc_platform.rs/NetInterface
+    // 4. -1^s -> get s from p.netlayer.is_server -> mpc_platform.rs/NetInterface
+    //    how can I implement a -1 in u32? Should the subtraction happen elsewhere? Or .negate?
+    // -> .negate is -1 in ring elements
     // 5. Beaver triple with w and u -> ret
     // 6. Test correctness
 
