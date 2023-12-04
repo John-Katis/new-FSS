@@ -43,7 +43,8 @@ pub async fn pika_eval(p: &mut MPCParty<BasicOffline>, x_share:&RingElm)->RingEl
     println!("FUNC DB LENGTH {}", func_database.len());
 
     // let mut u: RingElm = RingElm::from(0);
-
+    
+    // TODO if y_vec[shift_index] -> if !isserver -> add else negate then add!!
     // // Protocol 2(c) - compute uσ then u
     // for i in 0..y_vec.len() {
     //     let progress = i / y_vec.len();
