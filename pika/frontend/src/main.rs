@@ -16,7 +16,7 @@ use std::time::Duration;
 use fss::Group;
 
 pub const INPUT_BITS:usize = 32;
-const LAN_ADDRESS: &'static str = "127.0.0.1:8088";
+const LAN_ADDRESS: &'static str = "127.0.0.1:8888";
 const WAN_ADDRESS: &'static str = "45.63.6.86:8088";
 pub const TEST_WAN_NETWORK: bool = true;
 

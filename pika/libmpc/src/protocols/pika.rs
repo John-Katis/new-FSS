@@ -39,8 +39,8 @@ pub async fn pika_eval(p: &mut MPCParty<BasicOffline>, x_share:&RingElm)->RingEl
     println!("y_vec LENGTH {:?}",y_vec.len());
     println!("y_vec elem1 {:?}",y_vec[0]);
 
-    // let func_database = load_func_db(); // -> load works but store is not done correctly -> load 32 files
-    // println!("FUNC DB LENGTH {}", func_database.len());
+    let func_database = load_func_db(); // -> load works but store is not done correctly -> load 32 files
+    println!("FUNC DB LENGTH {}", func_database.len());
 
     // let mut u: RingElm = RingElm::from(0);
 
@@ -49,12 +49,13 @@ pub async fn pika_eval(p: &mut MPCParty<BasicOffline>, x_share:&RingElm)->RingEl
     //     let progress = i / y_vec.len();
     //     println!("STEP 2C PROGRESS: {}", progress);
     //     let shift_index = i + x.to_u32().unwrap_or_default() as usize;
-    //     let y_elem = y_vec[shift_index];
-    //     if p.netlayer.is_server {
-    //         u = u + y_vec[shift_index] * RingElm::from(func_database[i]);
-    //     } else {
-    //         u = u + (y_vec[shift_index] * RingElm::from(func_database[i])).negate();
+    //     let mut temp = RingElm::from(func_database[i]) * y_vec[shift_index];
+        
+    //     if !p.netlayer.is_server {
+    //         temp.negate();
     //     }
+
+    //     u = u + temp;
     // }
 
     // // TODO u = -u if not is_server || can be modelled in the main.rs as well as a subtraction?? otherwise I have type mismatches
@@ -64,11 +65,10 @@ pub async fn pika_eval(p: &mut MPCParty<BasicOffline>, x_share:&RingElm)->RingEl
     // println!("");
 
     // TODOs 
-    // 4. -1^s -> get s from p.netlayer.is_server -> mpc_platform.rs/NetInterface
-    //    how can I implement a -1 in u32? Should the subtraction happen elsewhere? Or .negate?
-    // -> .negate is -1 in ring elements
-    // 5. Beaver triple with w and u -> ret
-    // 6. Test correctness
+    // 1. Test evalAll correctness
+    // 2. Test a_share and w_share correctness
+    // 3. Beaver triple with w and u -> ret
+    // 4. Test correctness of returned results
 
     ret
 }
