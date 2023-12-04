@@ -9,7 +9,7 @@ use std::ops::{Add, Sub, Mul};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct RingElm {
-    value: u16, // TODO this should be u32 - output domain in f32 -> conversion after pika_eval!!!
+    value: u16,
 }
 
 impl Add for RingElm {
@@ -50,6 +50,10 @@ impl RingElm {
 
     pub fn to_u16(&self) -> Option<u16> {
         self.value.to_u16()
+    }
+
+    pub fn to_usize(&self) -> Option<usize> {
+        self.value.to_usize()
     }
 
     pub fn to_u8_vec(&self) -> Vec<u8> {
@@ -138,10 +142,49 @@ impl crate::Group for RingElm {
     }
 }
 
+impl crate::Group for bool {
+    #[inline]
+    fn zero() -> Self {
+        false
+    }
+
+    #[inline]
+    fn one() -> Self {
+        true
+    }
+
+    #[inline]
+    fn add(&mut self, other: &Self) {
+        *self = *self ^ other;
+    }
+
+    #[inline]
+    fn sub(&mut self, other: &Self) {
+        *self = *self ^ other;
+    }
+
+    #[inline]
+    fn mul(&mut self, other: &Self) {
+        *self = *self & other;
+    }
+
+     #[inline]
+    fn negate(&mut self) {
+        *self = !*self;
+    }
+}
+
 impl crate::prg::FromRng for RingElm {
     #[inline]
     fn from_rng(&mut self, rng: &mut impl rand::Rng) {
-        self.value = rng.next_u32() as u16; // FIXME can a trait in rng return a u16 type?
+        self.value = rng.next_u32() as u16;
+    }
+}
+
+impl crate::prg::FromRng for bool {
+    #[inline]
+    fn from_rng(&mut self, rng: &mut impl rand::Rng) {
+        *self = rng.gen();
     }
 }
 

@@ -67,8 +67,6 @@ fn gen_cor_word(bit: bool, bits: &mut (bool, bool), seeds: &mut (prg::PrgSeed, p
         }
 
         *bits.get_mut(b) = newbit;
-        println!("NEWBIT {}", newbit);
-        println!("CW: {:?}", cw);
     }
 
     cw
@@ -92,7 +90,7 @@ fn find_first_difference_index(v1: &[bool], v2: &[bool]) -> usize {
 
 impl<T> DPFKey<T> where T: prg::FromRng + Clone + Group + std::fmt::Debug
 {
-    pub fn gen(alpha_bits: &[bool], value:&T) -> (DPFKey<T>, DPFKey<T>) {
+    pub fn gen(alpha_bits: &[bool], value:&T) -> (DPFKey<T>, DPFKey<T>, bool) {
         // let root_seeds = (prg::PrgSeed::zero(), prg::PrgSeed::one());
         let root_seeds = (prg::PrgSeed::random(), prg::PrgSeed::random());
         let root_bits = (false, true);
@@ -114,11 +112,8 @@ impl<T> DPFKey<T> where T: prg::FromRng + Clone + Group + std::fmt::Debug
                 if bits.1 {
                     lastWord.negate();
                 }
-                // TODO bits.0 is t0v
-                println!("{:?}", bits);
-                println!("{:?}", lastWord);
             }
-        } // NEED TO EXTRACT t0 (ν) || w=1 if t0(v)=1 else w=1 -> generate shares
+        }
 
         (
             DPFKey::<T> {
@@ -133,6 +128,7 @@ impl<T> DPFKey<T> where T: prg::FromRng + Clone + Group + std::fmt::Debug
                 cor_words: cor_words,
                 word:  lastWord,
             },
+            bits.0,
         )
     }
 

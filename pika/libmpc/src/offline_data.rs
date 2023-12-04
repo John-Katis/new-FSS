@@ -37,14 +37,15 @@ pub fn read_file<T: DeserializeOwned>(path: &str) -> Result<T, Error> {
 
 pub struct BasicOffline {
     // seed: PrgSeed,
-    pub k_share: Vec<DPFKey<RingElm>>, //dpf keys
+    pub k_share: Vec<DPFKey<bool>>, //dpf keys
     pub a_share: Vec<RingElm>,  //alpha
+    pub w_share: Vec<RingElm>,
     // pub beavers: Vec<BeaverTuple>,
 }
 
 impl BasicOffline{
     pub fn new() -> Self{
-        Self{k_share: Vec::new(), a_share: Vec::new()}
+        Self{k_share: Vec::new(), a_share: Vec::new(), w_share: Vec::new()}
     }
 
     pub fn loadData(&mut self,idx:&u8){
@@ -55,6 +56,11 @@ impl BasicOffline{
 
         match read_file(&format!("../data/a{}.bin", idx)) {
             Ok(value) => self.a_share = value,
+            Err(e) => println!("Error reading file: {}", e),  // Or handle the error as needed
+        }
+
+        match read_file(&format!("../data/w{}.bin", idx)) {
+            Ok(value) => self.w_share = value,
             Err(e) => println!("Error reading file: {}", e),  // Or handle the error as needed
         }
 
@@ -70,35 +76,38 @@ impl BasicOffline{
 
  //Offline-Step-1. Set DPF Parameters
         let r_bits = stream.next_bits(input_bits);
-        //let r_bits0 = stream.next_bits(input_bits);
 
-        let beta = RingElm::from(1u16);
+        let beta: bool = true; // RingElm::from(1u16);
 
-        let mut dpf_0: Vec<DPFKey<RingElm>> = Vec::new();
-        let mut dpf_1: Vec<DPFKey<RingElm>> = Vec::new();
+        let mut dpf_0: Vec<DPFKey<bool>> = Vec::new();
+        let mut dpf_1: Vec<DPFKey<bool>> = Vec::new();
 
         let mut aVec_0: Vec<RingElm> = Vec::new();
         let mut aVec_1: Vec<RingElm> = Vec::new();
 
-        // rnd_alpha and rnd_alpha1 are basically the same
-        // that means aVec_0 always has the value 0
-        // it finally works because the bits of 0 and the actual r bits are added as ring element in exchange_ring_vec and r is reconstructed for both parties
-        // !!This is not secure!!
-        let mut rnd_alpha = RingElm::from( bits_to_u16(&r_bits[0..input_bits]));
-        let mut rnd_alpha1 = RingElm::from( bits_to_u16(&r_bits[0..input_bits]));
-        aVec_1.push(rnd_alpha1.clone());
-        aVec_0.push(rnd_alpha - rnd_alpha1);
+        let mut wVec_0: Vec<RingElm> = Vec::new();
+        let mut wVec_1: Vec<RingElm> = Vec::new();
 
-        //println!("r_bits");
-        //rnd_alpha.print();
-        //println!("{:?}", aVec_0);
-        //println!("{:?}", aVec_1);
+        // FIXME are the shares correctly generated?
+        let rnd_alpha0 = RingElm::from( bits_to_u16(&r_bits[0..input_bits]));
+        let rnd_alpha1 = RingElm::from( bits_to_u16(&r_bits[0..input_bits]));
+        aVec_0.push(rnd_alpha0);
+        aVec_1.push(rnd_alpha1);
 
-        let (dpf_key0, dpf_key1) = DPFKey::gen(&r_bits[0..input_bits], &beta);
+        let (dpf_key0, dpf_key1, control_bit) = DPFKey::gen(&r_bits[0..input_bits], &beta);
         dpf_0.push(dpf_key0);
         dpf_1.push(dpf_key1);
-        
-        // TODO Generate w (correction bit) -> w=1 if final layer control bit t0=1 else w=-1
+
+        let w0: RingElm = RingElm::from(bits_to_u16(&r_bits[0..input_bits]));
+        let mut w_bit: RingElm = RingElm::from(1u16);
+
+        if !control_bit {
+            w_bit.negate();
+        }
+
+        let w1: RingElm = w_bit - w0;
+        wVec_0.push(w0);
+        wVec_1.push(w1);
 
 //Offline-Step2. SIGMOID TRUTH TABLE
         let mut func_truth_table: Vec<f32> = Vec::new();
@@ -124,7 +133,6 @@ impl BasicOffline{
             //     f32_value, integer_part, fractional_part
             // );
 
-            // scaled_values_vec.push(f32_value);
             func_truth_table.push(sigmoid(f32_value));
         }
 
@@ -146,6 +154,9 @@ impl BasicOffline{
 
         write_file("../data/a0.bin", &aVec_0);
         write_file("../data/a1.bin", &aVec_1);
+
+        write_file("../data/w0.bin", &wVec_0);
+        write_file("../data/w1.bin", &wVec_1);
     }
 }
 

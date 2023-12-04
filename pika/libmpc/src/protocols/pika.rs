@@ -6,6 +6,10 @@ use fss::BinElm;
 use crate::offline_data::*;
 use rayon::prelude::*;
 use std::sync::{Arc, Mutex};
+use std::time::Instant;
+
+
+pub const TOTAL_BITS:usize = 16;
 
 pub async fn pika_eval(p: &mut MPCParty<BasicOffline>, x_share:&RingElm)->RingElm{
     let mut ret = RingElm::zero();
@@ -29,45 +33,46 @@ pub async fn pika_eval(p: &mut MPCParty<BasicOffline>, x_share:&RingElm)->RingEl
     println!("");
 
     // Protocol 2(b) - compute yσ (EvalAll routine -> implement in DPF key)
+    let evalall_timer = Instant::now();
     let y_vec = p.offlinedata.k_share[0].evalAll();
+    println!("Eval All time elapsed: {:?}", evalall_timer.elapsed());
     println!("y_vec LENGTH {:?}",y_vec.len());
+    println!("y_vec 1st Elem {:?}",y_vec[0]);
 
-    let func_database = load_func_db(); // -> load works but store is not done correctly -> load 16 files
+    let func_database = load_func_db(); // -> load works but store is not done correctly -> load 32 files
     println!("FUNC DB LENGTH {}", func_database.len());
 
-    let mut u: RingElm = RingElm::from(0);
-    // let mut u: f32 = 0.0;
+    // let mut u: RingElm = RingElm::from(0u16);
+    
+    // // TODO if y_vec[shift_index] -> if !isserver -> add else negate then add!!
+    // // Protocol 2(c) - compute uσ then u
+    // for i in 0..y_vec.len() {
+    //     let progress = i / y_vec.len();
+    //     println!("STEP 2C PROGRESS: {}", progress);
 
-    // Protocol 2(c) - compute uσ then u
-    for i in 0..y_vec.len() {
-        // ##### ##### WAY 1 - u as RingElm ##### #####
-        let shift_index = RingElm::from(i as u16) + x;
-        let y_elem = y_vec[shift_index.to_u16().unwrap_or_default() as usize];
-        // CURRENTLY: converting float values from func_database to ring elements as u16 (probably the correct way - need the wrapping around)
-        // REQUIRED: Inner product of function database and evalAll output
-        u = u + y_vec[shift_index.to_u16().unwrap_or_default() as usize] * RingElm::from(func_database[i]); // need the -1^σ
+    //     let shift_index = i + x.to_u16().unwrap_or_default() as usize;
+    //     if y_vec[shift_index] {
+    //         let mut temp = RingElm::from(func_database[i]);
+            
+    //         if !p.netlayer.is_server {
+    //             temp.negate();
+    //         }
 
-        // // ##### ##### WAY 2 - u as float ##### #####
-        // let shift_index = RingElm::from(i as u16) + x;
-        // let y_elem = y_vec[shift_index.to_u16().unwrap_or_default() as usize];
-        // // CURRENTLY: converting ring elements from y to f32 - not good, the output is a huge, unsusable number
-        // // REQUIRED: Inner product of function database and evalAll output
-        // u = u + y_elem.to_u16().unwrap_or_default() as f32 * func_database[i]; // need the -1^σ
-    }
+    //         u = u + temp;
+    //     }   
+    // }
 
-    println!("u VALUE (WITHOUT -1^σ)");
-    u.print();
-    println!("");
+    // // TODO u = -u if not is_server || can be modelled in the main.rs as well as a subtraction?? otherwise I have type mismatches
 
-    // vvv QUESTIONS vvv
-    // 1. See dpf, I have the bits in isolation but which one defines t0(v)
-    // 2. How to do -1^σ (always has output of -1)
-    // 3. See step 2(d) in paper
-    // 4. For finding u, I need to multiply -1^σ (by static casting?) with a RingElm and a f32 -> how can this be done? Should ring elements be a different type instead?
-    // 5. Implemented From<f32> in ring.rs -> should all ring element values be floats?
-    // 6. Also ring.rs -> i return the random number as u16 (not u32 as in Rust implementation), is that ok?
-    // ^^^ QUESTIONS ^^^4
-    // NOTE the 16 bit input domain is not valid for pika - the func database should be computed for the bounded domain k (so 16 bit is currently the bounded domain)
+    // println!("u VALUE (WITHOUT -1^σ)");
+    // u.print();
+    // println!("");
+
+    // TODOs 
+    // 1. Test evalAll correctness
+    // 2. Test a_share and w_share correctness
+    // 3. Beaver triple with w and u -> ret
+    // 4. Test correctness of returned results
 
     ret
 }
