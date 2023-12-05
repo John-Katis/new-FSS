@@ -113,27 +113,27 @@ impl BasicOffline{
 
  //Offline-Step2. SIGMOID TRUTH TABLE - should be created at each communicating side, here it takes to long to store (from c.40s to 200 with some more statements)
 
-        // let mut func_truth_table: Vec<f32> = Vec::new();
+        let mut func_truth_table: Vec<f32> = Vec::new();
 
-        // for integer_part in 0..(1 << INTEGER_BITS) {
-        //     let progress = integer_part  * 100 / (1 << INTEGER_BITS);
-        //     println!("FUNCTION DB GENERATION PROGRESS: {}", progress);
-        //     for floating_part in 0..(1 << FLOAT_BITS) {
+        for integer_part in 0..(1 << INTEGER_BITS) {
+            let progress = integer_part  * 100 / (1 << INTEGER_BITS);
+            println!("FUNCTION DB GENERATION PROGRESS: {}", progress);
+            for floating_part in 0..(1 << FLOAT_BITS) {
             
-        //         let combined_value = (integer_part << FLOAT_BITS) | floating_part; // | is logical or operation
+                let combined_value = (integer_part << FLOAT_BITS) | floating_part; // | is logical or operation
 
-        //         let scaled_value = (combined_value as f32) / (1 << FLOAT_BITS) as f32;  // Divide by 2^FLOAT_BITS
+                let scaled_value = (combined_value as f32) / (1 << FLOAT_BITS) as f32;  // Divide by 2^FLOAT_BITS
 
-        //         func_truth_table.push(sigmoid(scaled_value));
-        //     }
-        // }
+                func_truth_table.push(sigmoid(scaled_value));
+            }
+        }
         
-        // for i in 0..TOTAL_BITS {
-        //     let temp_slice = &func_truth_table[i*(func_truth_table.len()/TOTAL_BITS)..(i+1)*(func_truth_table.len()/TOTAL_BITS)];
-        //     // println!("{}", i);
-        //     // for j in 0..10 {println!("{}", temp_slice[j]);}
-        //     write_file(&format!("../data/func_database/slice_{}.bin", i), &temp_slice);
-        // }
+        for i in 0..TOTAL_BITS {
+            let temp_slice = &func_truth_table[i*(func_truth_table.len()/TOTAL_BITS)..(i+1)*(func_truth_table.len()/TOTAL_BITS)];
+            // println!("{}", i);
+            // for j in 0..10 {println!("{}", temp_slice[j]);}
+            write_file(&format!("../data/func_database/slice_{}.bin", i), &temp_slice);
+        }
     
         write_file("../data/k0.bin", &dpf_0);
         write_file("../data/k1.bin", &dpf_1);
