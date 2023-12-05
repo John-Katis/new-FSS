@@ -39,7 +39,7 @@ pub async fn pika_eval(p: &mut MPCParty<BasicOffline>, x_share:&RingElm)->RingEl
     // Protocol 2(c) - compute u
     for i in 0..y_vec.len() {
         // println!("STEP 2C PROGRESS: {}", i);
-
+        // TODO do this in plaintext - i+x.usize
         let mut ring_shift_index = RingElm::from(i as u16) + x;
         let usize_shift_index = ring_shift_index.to_usize();
 
@@ -55,6 +55,10 @@ pub async fn pika_eval(p: &mut MPCParty<BasicOffline>, x_share:&RingElm)->RingEl
             u = u + temp;
         }   
     }
+
+    println!("CURRENT SHARE:");
+    x_share.print();
+    println!("");
 
     println!("X SUBBED VALUE:");
     x.print();
@@ -78,6 +82,7 @@ pub async fn pika_eval(p: &mut MPCParty<BasicOffline>, x_share:&RingElm)->RingEl
     ret.print();
     println!();
 
+    // FIXME something wrong in the output
     ret
 }
 

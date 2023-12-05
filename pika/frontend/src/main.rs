@@ -78,6 +78,8 @@ async fn main() {
 
     let mut f_ret = File::create(format!( "../test/ret{}.bin", &index)).expect("create failed");
     f_ret.write_all(&bincode::serialize(&result).expect("Serialize cmp-bool-share error")).expect("Write cmp-bool-share error.");
+
+    // TODO Need another round of communication - exchange ring vector method
 }
 
 fn gen_offlinedata(){

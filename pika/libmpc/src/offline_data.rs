@@ -90,10 +90,10 @@ impl BasicOffline{
 
         // FIXME shares a are of the same number - not random
         let rnd_alpha0 = RingElm::from( bits_to_u16(&r_bits[0..input_bits]));
-        let rnd_alpha1 = RingElm::from( bits_to_u16(&r_bits[0..input_bits]));
+        let rnd_alpha1 = RingElm::from( bits_to_u16(&r_bits[0..input_bits])); // 2 times input bits
         aVec_0.push(rnd_alpha0);
         aVec_1.push(rnd_alpha1);
-
+        // TODO generate different a (do from input_bits..input_bits*2), add them in this call
         let (dpf_key0, dpf_key1, control_bit) = DPFKey::gen(&r_bits[0..input_bits], &beta);
         dpf_0.push(dpf_key0);
         dpf_1.push(dpf_key1);
