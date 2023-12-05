@@ -6,8 +6,6 @@ use fss::BinElm;
 use crate::offline_data::*;
 use rayon::prelude::*;
 use std::sync::{Arc, Mutex};
-use std::time::Instant;
-
 
 pub const TOTAL_BITS:usize = 16;
 
@@ -15,64 +13,70 @@ pub async fn pika_eval(p: &mut MPCParty<BasicOffline>, x_share:&RingElm)->RingEl
     let mut ret = RingElm::zero();
 
     // Protocol 2(a) - reconstruct x=r-a(mod2^k) -> r: random val, a: secret sharing of user input
-    // FIXME - Something wrong here - shares are the number and 0
     let mask = p.netlayer.exchange_ring_vec(p.offlinedata.a_share.to_vec()).await;
     let mut x = mask[0];
 
-    println!("MASK VALUE:"); // mask is 3561744742
-    x.print();
-    println!("");
+    // println!("MASK VALUE:");
+    // x.print();
+    // println!("");
 
-    println!("X VALUE:");
-    x_share.print();
-    println!("");
+    // println!("X VALUE:");
+    // x_share.print();
+    // println!("");
 
     x.sub(x_share);
+    // x.print();
+
+    // Protocol 2(b) - compute yσ (EvalAll routine -> implement in DPF key)
+    let y_vec = p.offlinedata.k_share[0].evalAll();
+    // println!("y_vec LENGTH {:?}",y_vec.len());
+
+    let func_database = load_func_db(); // -> load works but store is not done correctly -> load 32 files
+    // println!("FUNC DB LENGTH {}", func_database.len());
+
+    let mut u: RingElm = RingElm::from(0u16);
+    
+    // Protocol 2(c) - compute u
+    for i in 0..y_vec.len() {
+        // println!("STEP 2C PROGRESS: {}", i);
+
+        let mut ring_shift_index = RingElm::from(i as u16) + x;
+        let usize_shift_index = ring_shift_index.to_usize();
+
+        // println!("--- STEP 2C PROGRESS: {}", usize_shift_index);
+        if y_vec[usize_shift_index] {
+            let mut temp = RingElm::from(func_database[i]);
+            
+            // -1^σ
+            if !p.netlayer.is_server {
+                temp.negate();
+            }
+
+            u = u + temp;
+        }   
+    }
+
     println!("X SUBBED VALUE:");
     x.print();
     println!("");
 
-    // Protocol 2(b) - compute yσ (EvalAll routine -> implement in DPF key)
-    let evalall_timer = Instant::now();
-    let y_vec = p.offlinedata.k_share[0].evalAll();
-    println!("Eval All time elapsed: {:?}", evalall_timer.elapsed());
-    println!("y_vec LENGTH {:?}",y_vec.len());
-    println!("y_vec 1st Elem {:?}",y_vec[0]);
+    println!("U VALUE:");
+    u.print();
+    println!("");
 
-    let func_database = load_func_db(); // -> load works but store is not done correctly -> load 32 files
-    println!("FUNC DB LENGTH {}", func_database.len());
+    println!("W SHARE: ");
+    p.offlinedata.w_share[0].print();
+    println!("");
 
-    // let mut u: RingElm = RingElm::from(0u16);
-    
-    // // TODO if y_vec[shift_index] -> if !isserver -> add else negate then add!!
-    // // Protocol 2(c) - compute uσ then u
-    // for i in 0..y_vec.len() {
-    //     let progress = i / y_vec.len();
-    //     println!("STEP 2C PROGRESS: {}", progress);
+    ret = p.offlinedata.beavers[0].mul_compute(
+        p.netlayer.is_server,
+        &u,
+        &p.offlinedata.w_share[0]
+    );
 
-    //     let shift_index = i + x.to_u16().unwrap_or_default() as usize;
-    //     if y_vec[shift_index] {
-    //         let mut temp = RingElm::from(func_database[i]);
-            
-    //         if !p.netlayer.is_server {
-    //             temp.negate();
-    //         }
-
-    //         u = u + temp;
-    //     }   
-    // }
-
-    // // TODO u = -u if not is_server || can be modelled in the main.rs as well as a subtraction?? otherwise I have type mismatches
-
-    // println!("u VALUE (WITHOUT -1^σ)");
-    // u.print();
-    // println!("");
-
-    // TODOs 
-    // 1. Test evalAll correctness
-    // 2. Test a_share and w_share correctness
-    // 3. Beaver triple with w and u -> ret
-    // 4. Test correctness of returned results
+    println!("BEAVER TRIPLE RESULT");
+    ret.print();
+    println!();
 
     ret
 }
@@ -92,7 +96,7 @@ fn load_func_db()->Vec<f32>{
     ret
 }
 
-// The function database, evalAll and calculation here must happen of 2^k (not 2^l which is the input domain)
+// The function database, evalAll and calculation here must happen over 2^k (not 2^l which is the input domain)
 fn quantize_input(input_domain_x_share:&RingElm)->RingElm{
     let mut bound_domain_x_share = RingElm::zero();
 

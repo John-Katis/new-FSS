@@ -81,7 +81,7 @@ impl crate::Group for BinElm {
 impl crate::prg::FromRng for BinElm {
     #[inline]
     fn from_rng(&mut self, rng: &mut impl rand::Rng) {
-        let rand_u16:u16  = rng.next_u32() as u16;  // FIXME can a trait in rng return a u16 type?
+        let rand_u16:u16  = rng.next_u32() as u16;
         self.value = rand_u16%2 == 1;
     }
 }

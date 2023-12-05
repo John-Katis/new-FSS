@@ -21,7 +21,7 @@ pub const FLOAT_BITS:i32 = 9;
 pub const TOTAL_BITS:usize = INTEGER_BITS as usize + FLOAT_BITS as usize;
 
 
-fn write_file<T: serde::ser::Serialize>(path:&str, value:&T){
+pub fn write_file<T: serde::ser::Serialize>(path:&str, value:&T){
     let mut file = File::create(path).expect("create failed");
     file.write_all(&bincode::serialize(&value).expect("Serialize value error")).expect("Write key error.");
 }
@@ -40,41 +40,41 @@ pub struct BasicOffline {
     pub k_share: Vec<DPFKey<bool>>, //dpf keys
     pub a_share: Vec<RingElm>,  //alpha
     pub w_share: Vec<RingElm>,
-    // pub beavers: Vec<BeaverTuple>,
+    pub beavers: Vec<BeaverTuple>,
 }
 
 impl BasicOffline{
     pub fn new() -> Self{
-        Self{k_share: Vec::new(), a_share: Vec::new(), w_share: Vec::new()}
+        Self{k_share: Vec::new(), a_share: Vec::new(), w_share: Vec::new(), beavers: Vec::new()}
     }
 
     pub fn loadData(&mut self,idx:&u8){
         match read_file(&format!("../data/k{}.bin", idx)) {
             Ok(value) => self.k_share = value,
-            Err(e) => println!("Error reading file: {}", e),  // Or handle the error as needed
+            Err(e) => println!("Error reading key file: {}", e),  // Or handle the error as needed
         }
 
         match read_file(&format!("../data/a{}.bin", idx)) {
             Ok(value) => self.a_share = value,
-            Err(e) => println!("Error reading file: {}", e),  // Or handle the error as needed
+            Err(e) => println!("Error reading a share file: {}", e),  // Or handle the error as needed
         }
 
         match read_file(&format!("../data/w{}.bin", idx)) {
             Ok(value) => self.w_share = value,
-            Err(e) => println!("Error reading file: {}", e),  // Or handle the error as needed
+            Err(e) => println!("Error reading w share file: {}", e),  // Or handle the error as needed
         }
 
-        // match read_file(&format!("../data/beaver{}.bin", idx)) {
-        //     Ok(value) => self.beavers = value,
-        //     Err(e) => println!("Error reading file: {}", e),  // Or handle the error as needed
-        // }
+        match read_file(&format!("../data/bvt{}.bin", idx)) {
+            Ok(value) => self.beavers = value,
+            Err(e) => println!("Error reading beaver tuple file: {}", e),  // Or handle the error as needed
+        }
     }
 
     pub fn genData(&self,seed: &PrgSeed,input_bits: usize){
         let mut stream = FixedKeyPrgStream::new();
         stream.set_key(&seed.key);
 
- //Offline-Step-1. Set DPF Parameters
+        //Offline-Step-1. Set DPF Parameters: k, a, w
         let r_bits = stream.next_bits(input_bits);
 
         let beta: bool = true; // RingElm::from(1u16);
@@ -88,7 +88,7 @@ impl BasicOffline{
         let mut wVec_0: Vec<RingElm> = Vec::new();
         let mut wVec_1: Vec<RingElm> = Vec::new();
 
-        // FIXME are the shares correctly generated?
+        // FIXME shares a are of the same number - not random
         let rnd_alpha0 = RingElm::from( bits_to_u16(&r_bits[0..input_bits]));
         let rnd_alpha1 = RingElm::from( bits_to_u16(&r_bits[0..input_bits]));
         aVec_0.push(rnd_alpha0);
@@ -109,9 +109,8 @@ impl BasicOffline{
         wVec_0.push(w0);
         wVec_1.push(w1);
 
-//Offline-Step2. SIGMOID TRUTH TABLE
+        //Offline-Step2. Function truth table
         let mut func_truth_table: Vec<f32> = Vec::new();
-        // let mut scaled_values_vec: Vec<f32> = Vec::new();
 
         for i in 0..TOTAL_NUMBERS {
             let integer_part = i >> FLOAT_BITS;
@@ -119,7 +118,6 @@ impl BasicOffline{
 
             let combined_value = (integer_part << FLOAT_BITS) | fractional_part;
 
-            // Calculate the corresponding f32 value
             // FIXME ?? at index 0 and 32768 it is both times 0 (or -0) with sigmoid 0.5 (exact)
             let scaled_value = combined_value as f32 / (1 << FLOAT_BITS) as f32;
             let f32_value = if i < TOTAL_NUMBERS / 2 {
@@ -141,7 +139,12 @@ impl BasicOffline{
         //     println!("Number {} || Sigmoid {}", scaled_values_vec[k], func_truth_table[k]);
         // }
 
-        // Split truth table into TOTAL_BITS parts
+        let size: usize = 1;
+        let mut beavertuples0 = Vec::new();
+        let mut beavertuples1 = Vec::new();
+
+        BeaverTuple::genBeaver(&mut beavertuples0, &mut beavertuples1, &seed, size);
+
         for i in 0..TOTAL_BITS {
             let temp_slice = &func_truth_table[
                 i*(func_truth_table.len()/TOTAL_BITS)..(i+1)*(func_truth_table.len()/TOTAL_BITS)
@@ -157,6 +160,9 @@ impl BasicOffline{
 
         write_file("../data/w0.bin", &wVec_0);
         write_file("../data/w1.bin", &wVec_1);
+
+        write_file("../data/bvt0.bin", &beavertuples0);
+        write_file("../data/bvt1.bin", &beavertuples1);
     }
 }
 

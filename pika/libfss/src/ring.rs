@@ -52,8 +52,8 @@ impl RingElm {
         self.value.to_u16()
     }
 
-    pub fn to_usize(&self) -> Option<usize> {
-        self.value.to_usize()
+    pub fn to_usize(&self) -> usize {
+        self.value.to_usize().unwrap()
     }
 
     pub fn to_u8_vec(&self) -> Vec<u8> {
