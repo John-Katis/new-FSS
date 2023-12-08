@@ -4,7 +4,7 @@ use libmpc::mpc_platform::NetInterface;
 
 use fss::{prg::*, RingElm};
 use libmpc::offline_data::BasicOffline;
-use fss::bits_to_u16;
+use fss::bits_to_u32;
 
 use std::fs::File;
 use std::io::Write;
@@ -15,7 +15,8 @@ use std::thread::sleep;
 use std::time::Duration;
 use fss::Group;
 
-pub const INPUT_BITS:usize = 16;
+pub const INPUT_BITS:usize = 32;
+pub const BOUNDED_DOMAIN_BITS:usize = 16; 
 const LAN_ADDRESS: &'static str = "127.0.0.1:8088";
 const WAN_ADDRESS: &'static str = "45.63.6.86:8088";
 pub const TEST_WAN_NETWORK: bool = true;
@@ -69,10 +70,10 @@ async fn main() {
     p.setup(10, 10);
 
     if is_server{
-        let mut cur_share = RingElm::from( bits_to_u16(&x_share_bits[..INPUT_BITS]));
+        let mut cur_share = RingElm::from( bits_to_u32(&x_share_bits[..INPUT_BITS]));
         result = pika_eval(&mut p, &cur_share).await;
     }else{
-        let mut cur_share = RingElm::from( bits_to_u16(&x_share_bits[INPUT_BITS..]));
+        let mut cur_share = RingElm::from( bits_to_u32(&x_share_bits[INPUT_BITS..]));
         result = pika_eval(&mut p, &cur_share).await;
     }
 
@@ -86,7 +87,7 @@ fn gen_offlinedata(){
     let offline_timer = Instant::now();
 
     let offline = BasicOffline::new();
-    offline.genData(&PrgSeed::zero(), INPUT_BITS);
+    offline.genData(&PrgSeed::zero(), INPUT_BITS, BOUNDED_DOMAIN_BITS);
 
     println!("Offline key generation time:{:?}", offline_timer.elapsed());
 }

@@ -7,13 +7,15 @@ use crate::offline_data::*;
 use rayon::prelude::*;
 use std::sync::{Arc, Mutex};
 
-pub const TOTAL_BITS:usize = 16;
+pub const TOTAL_BITS:usize = 32;
 
+// TODO see protocol text - implement exactly
+// TODO make sure a good separation between 2^l (input) and 2^k (eval, fDB) is made
+// TODO implement shift_index correctly
 pub async fn pika_eval(p: &mut MPCParty<BasicOffline>, x_share:&RingElm)->RingElm{
     let mut ret = RingElm::zero();
-
     // Protocol 2(a) - reconstruct x=r-a(mod2^k) -> r: random val, a: secret sharing of user input
-    let mask = p.netlayer.exchange_ring_vec(p.offlinedata.a_share.to_vec()).await;
+    let mask = p.netlayer.exchange_ring_vec(p.offlinedata.r_share.to_vec()).await;
     let mut x = mask[0];
 
     // println!("MASK VALUE:");
@@ -27,34 +29,37 @@ pub async fn pika_eval(p: &mut MPCParty<BasicOffline>, x_share:&RingElm)->RingEl
     x.sub(x_share);
     // x.print();
 
+    // FIXME these should be 2^k
     // Protocol 2(b) - compute yσ (EvalAll routine -> implement in DPF key)
     let y_vec = p.offlinedata.k_share[0].evalAll();
     // println!("y_vec LENGTH {:?}",y_vec.len());
 
     let func_database = load_func_db(); // -> load works but store is not done correctly -> load 32 files
     // println!("FUNC DB LENGTH {}", func_database.len());
+    // FIXME everything else (x, x_share, w, u) should be 2^l
 
-    let mut u: RingElm = RingElm::from(0u16);
+    let mut u: RingElm = RingElm::from(0u32);
     
     // Protocol 2(c) - compute u
-    for i in 0..y_vec.len() {
-        // println!("STEP 2C PROGRESS: {}", i);
-        // TODO do this in plaintext - i+x.usize
-        let mut ring_shift_index = RingElm::from(i as u16) + x;
-        let usize_shift_index = ring_shift_index.to_usize();
+    // FIXME shift_index needs to wrap around 2^k
+    // for i in 0..y_vec.len() {
+    //     // println!("STEP 2C PROGRESS: {}", i);
+    //     // TODO do this in plaintext - i+x.usize
+    //     let mut ring_shift_index = RingElm::from(i as u32) + x;
+    //     let usize_shift_index = ring_shift_index.to_usize();
 
-        // println!("--- STEP 2C PROGRESS: {}", usize_shift_index);
-        if y_vec[usize_shift_index] {
-            let mut temp = RingElm::from(func_database[i]);
+    //     // println!("--- STEP 2C PROGRESS: {}", usize_shift_index);
+    //     if y_vec[usize_shift_index] {
+    //         let mut temp = RingElm::from(func_database[i]);
             
-            // -1^σ
-            if !p.netlayer.is_server {
-                temp.negate();
-            }
+    //         // -1^σ
+    //         if !p.netlayer.is_server {
+    //             temp.negate();
+    //         }
 
-            u = u + temp;
-        }   
-    }
+    //         u = u + temp;
+    //     }   
+    // }
 
     println!("CURRENT SHARE:");
     x_share.print();
@@ -71,7 +76,8 @@ pub async fn pika_eval(p: &mut MPCParty<BasicOffline>, x_share:&RingElm)->RingEl
     println!("W SHARE: ");
     p.offlinedata.w_share[0].print();
     println!("");
-
+    
+    // TODO this should be happening in online
     ret = p.offlinedata.beavers[0].mul_compute(
         p.netlayer.is_server,
         &u,
@@ -82,14 +88,13 @@ pub async fn pika_eval(p: &mut MPCParty<BasicOffline>, x_share:&RingElm)->RingEl
     ret.print();
     println!();
 
-    // FIXME something wrong in the output
     ret
 }
 
 fn load_func_db()->Vec<f32>{
     let mut ret: Vec<f32> = Vec::new();
 
-    for i in 0..16 {
+    for i in 0..TOTAL_BITS {
         let mut temp: Vec<f32> = Vec::new();
         match read_file(&format!("../data/func_database/slice_{}.bin", i)) {
             Ok(value) => temp = value,

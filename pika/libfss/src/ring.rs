@@ -4,12 +4,12 @@ use serde::Deserialize;
 use serde::Serialize;
 use std::cmp::Ordering;
 use std::convert::TryInto;
-use std::u16;
+use std::u32;
 use std::ops::{Add, Sub, Mul};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct RingElm {
-    value: u16,
+    value: u32,
 }
 
 impl Add for RingElm {
@@ -48,12 +48,8 @@ impl RingElm {
         print!("{} ", self.value);
     }
 
-    pub fn to_u16(&self) -> Option<u16> {
-        self.value.to_u16()
-    }
-
-    pub fn to_usize(&self) -> usize {
-        self.value.to_usize().unwrap()
+    pub fn to_u32(&self) -> Option<u32> {
+        self.value.to_u32()
     }
 
     pub fn to_u8_vec(&self) -> Vec<u8> {
@@ -67,14 +63,14 @@ impl From<f32> for RingElm {
     #[inline]
     fn from(inp: f32) -> Self {
         RingElm {
-            value: inp as u16,
+            value: inp as u32,
         }
     }
 }
 
-impl From<u16> for RingElm {
+impl From<u32> for RingElm {
     #[inline]
-    fn from(inp: u16) -> Self {
+    fn from(inp: u32) -> Self {
         RingElm {
             value: inp,
         }
@@ -84,11 +80,11 @@ impl From<u16> for RingElm {
 impl From<Vec<u8>> for RingElm {
     #[inline]
     fn from(bytes:Vec<u8>) -> Self {
-        if bytes.len() != 2 {
-            panic!("Invalid conversion: Vec<u8> must be exactly 2 bytes");
+        if bytes.len() != 4 {
+            panic!("Invalid conversion: Vec<u8> must be exactly 4 bytes");
         }
         RingElm {
-            value: u16::from_be_bytes([bytes[0], bytes[1]]),
+            value: u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]),
         }
     }
 }
@@ -135,10 +131,7 @@ impl crate::Group for RingElm {
 
      #[inline]
     fn negate(&mut self) {
-        let mut ret:u16 = u16::MAX;
-        ret = ret.wrapping_sub(self.value);
-        ret = ret.wrapping_add(1);
-        self.value = ret;
+        self.value = u32::MAX - &self.value;
     }
 }
 
@@ -177,14 +170,7 @@ impl crate::Group for bool {
 impl crate::prg::FromRng for RingElm {
     #[inline]
     fn from_rng(&mut self, rng: &mut impl rand::Rng) {
-        self.value = rng.next_u32() as u16;
-    }
-}
-
-impl crate::prg::FromRng for bool {
-    #[inline]
-    fn from_rng(&mut self, rng: &mut impl rand::Rng) {
-        *self = rng.gen();
+        self.value = rng.next_u32();
     }
 }
 

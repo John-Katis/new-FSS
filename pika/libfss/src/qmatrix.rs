@@ -15,7 +15,7 @@ pub fn f_conv_matrix(q: &Vec<bool>, batch_size: usize) -> QMatrix {
     }*/
     let mut const_bdc_bits = Vec::<bool>::new();
     for i in 0..every_batch_num {
-        let cur_bits = u16_to_bits_BE(batch_size, (every_batch_num - 1 - i).try_into().unwrap());
+        let cur_bits = u32_to_bits_BE(batch_size, (every_batch_num - 1 - i).try_into().unwrap());
         //convert int to {omega}-bits. q[0..{omega}]
         const_bdc_bits.extend(cur_bits);
     }

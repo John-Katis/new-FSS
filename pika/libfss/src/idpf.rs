@@ -205,16 +205,16 @@ mod tests {
     #[test]
     fn evalCheck() {
         let nbits = 3usize;
-        let alpha = crate::u16_to_bits(nbits, 7);
+        let alpha = crate::u32_to_bits(nbits, 7);
 
-        let values = RingElm::from(1u16).to_vec(nbits);
+        let values = RingElm::from(1u32).to_vec(nbits);
 
         let (dpf_key0, dpf_key1) = IDPFKey::gen(&alpha, &values);
 
         let mut state0 = dpf_key0.eval_init();
         let mut state1 = dpf_key1.eval_init();
 
-        let testNumber = crate::u16_to_bits(nbits, 7);
+        let testNumber = crate::u32_to_bits(nbits, 7);
 
         //Prefix trial test
         for i in 0..nbits{

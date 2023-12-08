@@ -81,8 +81,8 @@ impl crate::Group for BinElm {
 impl crate::prg::FromRng for BinElm {
     #[inline]
     fn from_rng(&mut self, rng: &mut impl rand::Rng) {
-        let rand_u16:u16  = rng.next_u32() as u16;
-        self.value = rand_u16%2 == 1;
+        let rand_u32:u32  = rng.next_u32();
+        self.value = rand_u32%2 == 1;
     }
 }
 

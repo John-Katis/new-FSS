@@ -6,7 +6,7 @@ use fss::BinElm;
 use fss::Group;
 use fss::Share;
 use fss::prg::PrgSeed;
-use fss::{bits_to_u16,bits_Xor};
+use fss::{bits_to_u32,bits_Xor};
 use fss::prg::FixedKeyPrgStream;
 use bincode::Error;
 use std::fs::File;
@@ -38,14 +38,14 @@ pub fn read_file<T: DeserializeOwned>(path: &str) -> Result<T, Error> {
 pub struct BasicOffline {
     // seed: PrgSeed,
     pub k_share: Vec<DPFKey<bool>>, //dpf keys
-    pub a_share: Vec<RingElm>,  //alpha
+    pub r_share: Vec<RingElm>,  //alpha
     pub w_share: Vec<RingElm>,
     pub beavers: Vec<BeaverTuple>,
 }
 
 impl BasicOffline{
     pub fn new() -> Self{
-        Self{k_share: Vec::new(), a_share: Vec::new(), w_share: Vec::new(), beavers: Vec::new()}
+        Self{k_share: Vec::new(), r_share: Vec::new(), w_share: Vec::new(), beavers: Vec::new()}
     }
 
     pub fn loadData(&mut self,idx:&u8){
@@ -54,8 +54,8 @@ impl BasicOffline{
             Err(e) => println!("Error reading key file: {}", e),  // Or handle the error as needed
         }
 
-        match read_file(&format!("../data/a{}.bin", idx)) {
-            Ok(value) => self.a_share = value,
+        match read_file(&format!("../data/r{}.bin", idx)) {
+            Ok(value) => self.r_share = value,
             Err(e) => println!("Error reading a share file: {}", e),  // Or handle the error as needed
         }
 
@@ -70,36 +70,41 @@ impl BasicOffline{
         }
     }
 
-    pub fn genData(&self,seed: &PrgSeed,input_bits: usize){
+    pub fn genData(&self,seed: &PrgSeed, input_bits: usize, bounded_domain_bits: usize){
         let mut stream = FixedKeyPrgStream::new();
         stream.set_key(&seed.key);
 
         //Offline-Step-1. Set DPF Parameters: k, a, w
-        let r_bits = stream.next_bits(input_bits);
+        let a_bits = stream.next_bits(bounded_domain_bits+input_bits);
 
-        let beta: bool = true; // RingElm::from(1u16);
+        let beta: bool = true; // RingElm::from(1u32);
 
         let mut dpf_0: Vec<DPFKey<bool>> = Vec::new();
         let mut dpf_1: Vec<DPFKey<bool>> = Vec::new();
 
-        let mut aVec_0: Vec<RingElm> = Vec::new();
-        let mut aVec_1: Vec<RingElm> = Vec::new();
+        let mut rVec_0: Vec<RingElm> = Vec::new();
+        let mut rVec_1: Vec<RingElm> = Vec::new();
 
         let mut wVec_0: Vec<RingElm> = Vec::new();
         let mut wVec_1: Vec<RingElm> = Vec::new();
 
-        // FIXME shares a are of the same number - not random
-        let rnd_alpha0 = RingElm::from( bits_to_u16(&r_bits[0..input_bits]));
-        let rnd_alpha1 = RingElm::from( bits_to_u16(&r_bits[0..input_bits])); // 2 times input bits
-        aVec_0.push(rnd_alpha0);
-        aVec_1.push(rnd_alpha1);
-        // TODO generate different a (do from input_bits..input_bits*2), add them in this call
-        let (dpf_key0, dpf_key1, control_bit) = DPFKey::gen(&r_bits[0..input_bits], &beta);
+        // TODO need to generate r shares with u16 representation
+        // Should I create a new RingElement object with minimal functionality for the bounded domain?
+        let r1: &[bool] = &a_bits[..bounded_domain_bits];
+        let r2: &[bool] = &a_bits[bounded_domain_bits..bounded_domain_bits*2];
+        let binding = r1.iter().zip(r2.iter()).map(|(&x, &y)| x || y).collect::<Vec<_>>();
+        let r: &[bool] = binding.as_slice();
+        // TODO store r1 and r2 is some format - RingElm? Plaintext u16? bool vector?
+        // Will later need to do a cacluation with the quantized input and r so best to have u16 plaintext or RingElement that supports u16
+        // rVec_0.push(r1);
+        // rVec_1.push(r2);
+
+        let (dpf_key0, dpf_key1, control_bit) = DPFKey::gen(&r, &beta);
         dpf_0.push(dpf_key0);
         dpf_1.push(dpf_key1);
 
-        let w0: RingElm = RingElm::from(bits_to_u16(&r_bits[0..input_bits]));
-        let mut w_bit: RingElm = RingElm::from(1u16);
+        let w0: RingElm = RingElm::from(bits_to_u32(&a_bits[bounded_domain_bits..bounded_domain_bits+input_bits]));
+        let mut w_bit: RingElm = RingElm::from(1u32);
 
         if !control_bit {
             w_bit.negate();
@@ -155,8 +160,8 @@ impl BasicOffline{
         write_file("../data/k0.bin", &dpf_0);
         write_file("../data/k1.bin", &dpf_1);
 
-        write_file("../data/a0.bin", &aVec_0);
-        write_file("../data/a1.bin", &aVec_1);
+        write_file("../data/r0.bin", &rVec_0);
+        write_file("../data/r1.bin", &rVec_1);
 
         write_file("../data/w0.bin", &wVec_0);
         write_file("../data/w1.bin", &wVec_1);

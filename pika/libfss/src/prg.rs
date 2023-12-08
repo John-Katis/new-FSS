@@ -29,7 +29,7 @@ const AES_KEY_SIZE: usize = 16;
 // AES block size in bytes. Always 16 bytes.
 pub const AES_BLOCK_SIZE: usize = 16;
 
-// XXX Todo try using 8-way parallelism (Nan)
+// XXX Todo try using 8-way parallelism
 pub struct FixedKeyPrgStream {
     aes: Aes128,
     ctr: __m128i,
@@ -53,6 +53,12 @@ pub trait FromRng {
 
     fn randomize(&mut self) {
         self.from_rng(&mut rand::thread_rng());
+    }
+}
+
+impl FromRng for bool {
+    fn from_rng(&mut self, stream: &mut (impl rand::Rng + rand_core::RngCore)) {
+        *self = stream.gen();
     }
 }
 
@@ -341,10 +347,9 @@ impl FixedKeyPrgStream {
     }
 }
 
-impl rand::RngCore for FixedKeyPrgStream {   
+impl rand::RngCore for FixedKeyPrgStream {
     fn next_u32(&mut self) -> u32 {
-        let u_32_num = rand_core::impls::next_u32_via_fill(self);
-        u_32_num as u32
+        rand_core::impls::next_u32_via_fill(self)
     }
 
     fn next_u64(&mut self) -> u64 {

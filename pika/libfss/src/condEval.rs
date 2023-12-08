@@ -1,5 +1,5 @@
 use crate::prg::{PrgSeed,FixedKeyPrgStream};
-use super::{bits_to_u16_BE,u16_to_bits_BE,RingElm,BinElm,ic::*};
+use super::{bits_to_u32_BE,u32_to_bits_BE,RingElm,BinElm,ic::*};
 use crate::Group;
 use serde::Deserialize;
 use serde::Serialize;
@@ -36,7 +36,7 @@ impl CondEvalKey
         stream.set_key(&root_seed.key);
 
         let alpha_bits = stream.next_bits(32usize);
-        let (p_bound,q_bound) = (RingElm::zero(), RingElm::from((1<<15)-1));
+        let (p_bound,q_bound) = (RingElm::zero(), RingElm::from((1<<31)-1));
         let ( key0,  mut key1) = ICKey::gen(&alpha_bits,&p_bound, &q_bound);
         key1.key_idx=false;
 
@@ -66,8 +66,8 @@ impl CondEvalKey
         condEvalK0.pi = pi_1;
         condEvalK1.pi = pi_0;
         
-        let mut alphaNumeric = RingElm::from(bits_to_u16_BE(&alpha_bits));
-        let alpha0 = RingElm::from(bits_to_u16_BE(&stream.next_bits(32usize)));
+        let mut alphaNumeric = RingElm::from(bits_to_u32_BE(&alpha_bits));
+        let alpha0 = RingElm::from(bits_to_u32_BE(&stream.next_bits(32usize)));
 
         condEvalK0.alpha = alpha0.clone();
         alphaNumeric.sub(&condEvalK0.alpha);
