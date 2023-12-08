@@ -12,7 +12,7 @@ pub const TOTAL_BITS:usize = 32;
 pub async fn pika_eval(p: &mut MPCParty<BasicOffline>, x_share:&RingElm)->RingElm{
     let mut ret = RingElm::zero();
     // Protocol 2(a) - reconstruct x=r-a(mod2^k) -> r: random val, a: secret sharing of user input
-    // first do r-a mod2k then exchange_u16_vec
+    // TODO first do r-a mod2k then exchange_u16_vec
     let mask = p.netlayer.exchange_u16_vec(p.offlinedata.r_share.to_vec()).await;
     let mut x = mask[0];
 
@@ -28,6 +28,7 @@ pub async fn pika_eval(p: &mut MPCParty<BasicOffline>, x_share:&RingElm)->RingEl
 
     let mut u: RingElm = RingElm::from(0u32);
     
+    // TODO wrapping add index
     // Protocol 2(c) - compute u
     // FIXME shift_index needs to wrap around 2^k
     // for i in 0..y_vec.len() {
@@ -69,6 +70,8 @@ pub async fn pika_eval(p: &mut MPCParty<BasicOffline>, x_share:&RingElm)->RingEl
     println!("{}", p.offlinedata.r_share[0]);
     
     // TODO this should be happening in online
+    // TODO exchange values a*us
+    // FIXME I am using the wrong beaver triple?
     ret = p.offlinedata.beavers[0].mul_compute(
         p.netlayer.is_server,
         &u,
