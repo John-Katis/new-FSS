@@ -103,7 +103,7 @@ impl BasicOffline{
         dpf_0.push(dpf_key0);
         dpf_1.push(dpf_key1);
 
-        let w0: RingElm = RingElm::from(bits_to_u32(&a_bits[bounded_domain_bits*2..bounded_domain_bits*2+input_bits-1]));
+        let w0: RingElm = RingElm::from(bits_to_u32(&a_bits[bounded_domain_bits*2..bounded_domain_bits*2+input_bits]));
         let mut w_bit: RingElm = RingElm::from(1u32);
 
         if !control_bit {
