@@ -6,7 +6,7 @@ use fss::BinElm;
 use fss::Group;
 use fss::Share;
 use fss::prg::PrgSeed;
-use fss::{bits_to_u32,bits_Xor};
+use fss::{bits_to_u32,bits_to_u16,bits_Xor};
 use fss::prg::FixedKeyPrgStream;
 use bincode::Error;
 use std::fs::File;
@@ -38,7 +38,7 @@ pub fn read_file<T: DeserializeOwned>(path: &str) -> Result<T, Error> {
 pub struct BasicOffline {
     // seed: PrgSeed,
     pub k_share: Vec<DPFKey<bool>>, //dpf keys
-    pub r_share: Vec<RingElm>,  //alpha
+    pub r_share: Vec<u16>,  //alpha
     pub w_share: Vec<RingElm>,
     pub beavers: Vec<BeaverTuple>,
 }
@@ -82,22 +82,22 @@ impl BasicOffline{
         let mut dpf_0: Vec<DPFKey<bool>> = Vec::new();
         let mut dpf_1: Vec<DPFKey<bool>> = Vec::new();
 
-        let mut rVec_0: Vec<RingElm> = Vec::new();
-        let mut rVec_1: Vec<RingElm> = Vec::new();
+        let mut rVec_0: Vec<u16> = Vec::new();
+        let mut rVec_1: Vec<u16> = Vec::new();
 
         let mut wVec_0: Vec<RingElm> = Vec::new();
         let mut wVec_1: Vec<RingElm> = Vec::new();
 
         // TODO need to generate r shares with u16 representation
-        // Should I create a new RingElement object with minimal functionality for the bounded domain?
         let r1: &[bool] = &a_bits[..bounded_domain_bits];
         let r2: &[bool] = &a_bits[bounded_domain_bits..bounded_domain_bits*2];
         let binding = r1.iter().zip(r2.iter()).map(|(&x, &y)| x || y).collect::<Vec<_>>();
         let r: &[bool] = binding.as_slice();
-        // TODO store r1 and r2 is some format - RingElm? Plaintext u16? bool vector?
-        // Will later need to do a cacluation with the quantized input and r so best to have u16 plaintext or RingElement that supports u16
-        // rVec_0.push(r1);
-        // rVec_1.push(r2);
+        
+        let r1_int: u16 = bits_to_u16(r1);
+        let r2_int: u16 = bits_to_u16(r2);
+        rVec_0.push(r1_int);
+        rVec_1.push(r2_int);
 
         let (dpf_key0, dpf_key1, control_bit) = DPFKey::gen(&r, &beta);
         dpf_0.push(dpf_key0);
@@ -124,6 +124,7 @@ impl BasicOffline{
             let combined_value = (integer_part << FLOAT_BITS) | fractional_part;
 
             // FIXME ?? at index 0 and 32768 it is both times 0 (or -0) with sigmoid 0.5 (exact)
+            // It should be (-2^k-1, 2^k-1], index 0 shouldn't come into play
             let scaled_value = combined_value as f32 / (1 << FLOAT_BITS) as f32;
             let f32_value = if i < TOTAL_NUMBERS / 2 {
                 scaled_value

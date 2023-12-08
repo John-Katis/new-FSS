@@ -305,4 +305,50 @@ impl NetInterface{
         buf   
     }
 
+    pub async fn exchange_u16_vec(&mut self, msg: Vec<u16>) -> Vec<u16>{
+        let mut x_msg: Vec<u8> = Vec::<u8>::new();
+        for e in &msg{
+            x_msg.append(&mut e.to_be_bytes().to_vec());
+        }//convert u32 stream to u8 stream
+
+        let xmsg_len = x_msg.len();
+        let mut buf: Vec<u8> = vec![0; xmsg_len];
+
+        if let Err(err) = self.writer.write_all(&x_msg.as_slice()).await{
+            eprintln!("Write to partner failed:{}", err);
+            std::process::exit(-1);
+        }
+        else{
+            // println!("Write to partner {} bytes.", xmsg_len);
+        } // send message to the partner
+
+        match  self.reader.read_exact(&mut buf[0..xmsg_len]).await{
+            Err(e) => {
+                eprintln!("read from client error: {}", e);
+                std::process::exit(-1);
+            }
+            Ok(0) => {
+                println!("client closed.");
+                std::process::exit(-1);
+            }     
+            Ok(n) => {
+                self.received+=xmsg_len;
+                assert_eq!(n, xmsg_len);
+                // println!("Receive {} bytes from partner.", n);
+            }        
+        }
+        self.rounds_occured+=1;
+
+        let mut r: Vec<u16> = msg;
+        for i in 0..xmsg_len/2{
+            let mut ybuf: [u8; 2]= [0; 2];
+            for j in 0..2{
+                ybuf[j] = buf[i*2+j];
+            }
+            let e = u16::from_be_bytes(ybuf);
+            r[i].wrapping_add(e);
+        }
+        r
+    }
+
 }

@@ -9,34 +9,22 @@ use std::sync::{Arc, Mutex};
 
 pub const TOTAL_BITS:usize = 32;
 
-// TODO see protocol text - implement exactly
-// TODO make sure a good separation between 2^l (input) and 2^k (eval, fDB) is made
-// TODO implement shift_index correctly
 pub async fn pika_eval(p: &mut MPCParty<BasicOffline>, x_share:&RingElm)->RingElm{
     let mut ret = RingElm::zero();
     // Protocol 2(a) - reconstruct x=r-a(mod2^k) -> r: random val, a: secret sharing of user input
-    let mask = p.netlayer.exchange_ring_vec(p.offlinedata.r_share.to_vec()).await;
+    // first do r-a mod2k then exchange_u16_vec
+    let mask = p.netlayer.exchange_u16_vec(p.offlinedata.r_share.to_vec()).await;
     let mut x = mask[0];
 
-    // println!("MASK VALUE:");
-    // x.print();
-    // println!("");
+    // TODO reduce x_share to u16 before calculations
+    x = x.wrapping_sub(10u16);
 
-    // println!("X VALUE:");
-    // x_share.print();
-    // println!("");
-
-    x.sub(x_share);
-    // x.print();
-
-    // FIXME these should be 2^k
     // Protocol 2(b) - compute yσ (EvalAll routine -> implement in DPF key)
     let y_vec = p.offlinedata.k_share[0].evalAll();
     // println!("y_vec LENGTH {:?}",y_vec.len());
 
     let func_database = load_func_db(); // -> load works but store is not done correctly -> load 32 files
     // println!("FUNC DB LENGTH {}", func_database.len());
-    // FIXME everything else (x, x_share, w, u) should be 2^l
 
     let mut u: RingElm = RingElm::from(0u32);
     
@@ -66,7 +54,7 @@ pub async fn pika_eval(p: &mut MPCParty<BasicOffline>, x_share:&RingElm)->RingEl
     println!("");
 
     println!("X SUBBED VALUE:");
-    x.print();
+    //x.print();
     println!("");
 
     println!("U VALUE:");
@@ -76,6 +64,9 @@ pub async fn pika_eval(p: &mut MPCParty<BasicOffline>, x_share:&RingElm)->RingEl
     println!("W SHARE: ");
     p.offlinedata.w_share[0].print();
     println!("");
+
+    println!("R SHARE:");
+    println!("{}", p.offlinedata.r_share[0]);
     
     // TODO this should be happening in online
     ret = p.offlinedata.beavers[0].mul_compute(

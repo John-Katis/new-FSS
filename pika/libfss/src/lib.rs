@@ -141,6 +141,17 @@ pub fn u32_to_bits(nbits: usize, input: u32) -> Vec<bool> {
     out
 }
 
+pub fn bits_to_u16(bits: &[bool]) -> u16 {
+    assert!(bits.len() <= 16);
+    let mut out = 0u16;
+
+    for i in 0..bits.len() {
+        let b16: u16 = bits[i].into();
+        out |= b16 << i;
+    }
+    out
+}
+
 pub fn bits_to_u32(bits: &[bool]) -> u32 {
     assert!(bits.len() <= 32);
     let mut out = 0u32;
