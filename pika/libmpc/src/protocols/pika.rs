@@ -10,27 +10,55 @@ use std::sync::{Arc, Mutex};
 pub const TOTAL_BITS:usize = 32;
 
 pub async fn pika_eval(p: &mut MPCParty<BasicOffline>, x_share:&RingElm)->RingElm{
+
+    println!("---------- Input ---------- ----------");
+
+    println!("CURRENT SHARE (u32 ring):");
+    x_share.print();
+    println!("");
+
+    println!("W SHARE (u32 ring): ");
+    p.offlinedata.w_share[0].print();
+    println!("");
+
+    println!("R SHARE (u16 domain):");
+    println!("{}", p.offlinedata.r_share[0]);
+
     let mut ret = RingElm::zero();
     
+    println!("---------- Mask x ---------- ----------");
+
     // Protocol 2(a) - reconstruct x=r-a(mod2^k) -> r: random val, a: secret sharing of user input
     let quantized_x_share = x_share.quantize_16();
-    let party_mask = p.offlinedata.r_share[0].wrapping_sub(quantized_x_share);
-    let mask = p.netlayer.exchange_u16_vec(p.offlinedata.r_share.to_vec()).await;
-    let mut x = mask[0];
+
+    println!("QUANTIZED INPUT SHARE (u16 domain):");
+    println!("{}", quantized_x_share);
+
+    let mut party_mask: Vec<u16> = Vec::new();
+    party_mask.push(p.offlinedata.r_share[0].wrapping_sub(quantized_x_share));
+    let mask = p.netlayer.exchange_u16_vec(party_mask).await;
+
+    println!("MASK X VALUE (u16 domain):");
+    println!("{}", mask[0]);
+
+    println!("---------- EvalAll ---------- ----------");
 
     // Protocol 2(b) - compute yσ (EvalAll routine -> implement in DPF key)
     let y_vec = p.offlinedata.k_share[0].evalAll();
-    println!("y_vec LENGTH {:?}",y_vec.len());
+    println!("y_vec LENGTH: {:?}",y_vec.len());
 
+    // FIXME very slow - no need to split into 16 files - fix in offline_data
     let func_database = load_func_db(); // -> load works but store is not done correctly -> load 32 files
-    println!("FUNC DB LENGTH {}", func_database.len());
+    println!("FUNC DB LENGTH: {}", func_database.len());
+
+    println!("---------- u Calculation (DB lookup) ----------");
 
     let mut u: RingElm = RingElm::from(0u32);
     
     // Protocol 2(c) - compute u
     for i in 0..y_vec.len() {
         let mut shift_index: u16 = i as u16;
-        shift_index = shift_index.wrapping_add(x);
+        shift_index = shift_index.wrapping_add(mask[0]);
 
         if y_vec[shift_index as usize] {
             let mut temp = RingElm::from(func_database[i]);
@@ -44,26 +72,11 @@ pub async fn pika_eval(p: &mut MPCParty<BasicOffline>, x_share:&RingElm)->RingEl
         }   
     }
 
-    println!("CURRENT SHARE:");
-    x_share.print();
-    println!("");
-
-    println!("X SUBBED VALUE:");
-    println!("{}", quantized_x_share);
-
-    println!("MASK X VALUE:");
-    println!("{}", x);
-
-    println!("U VALUE:");
+    println!("U VALUE (u32 ring):");
     u.print();
     println!("");
 
-    println!("W SHARE: ");
-    p.offlinedata.w_share[0].print();
-    println!("");
-
-    println!("R SHARE:");
-    println!("{}", p.offlinedata.r_share[0]);
+    println!("---------- Beaver Triple ---------- ----------");
     
     // TODO this should be happening in online
     // TODO exchange values a*uw or b*uw

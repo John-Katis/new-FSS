@@ -150,7 +150,7 @@ impl BasicOffline{
         let mut beavertuples1 = Vec::new();
 
         BeaverTuple::genBeaver(&mut beavertuples0, &mut beavertuples1, &seed, size);
-
+        // FIXME don't save to file, takes too much time and is needless
         for i in 0..TOTAL_BITS {
             let temp_slice = &func_truth_table[
                 i*(func_truth_table.len()/TOTAL_BITS)..(i+1)*(func_truth_table.len()/TOTAL_BITS)

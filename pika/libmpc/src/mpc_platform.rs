@@ -313,7 +313,6 @@ impl NetInterface{
 
         let xmsg_len = x_msg.len();
         let mut buf: Vec<u8> = vec![0; xmsg_len];
-
         if let Err(err) = self.writer.write_all(&x_msg.as_slice()).await{
             eprintln!("Write to partner failed:{}", err);
             std::process::exit(-1);
@@ -346,7 +345,7 @@ impl NetInterface{
                 ybuf[j] = buf[i*2+j];
             }
             let e = u16::from_be_bytes(ybuf);
-            r[i].wrapping_add(e);
+            r[i] = r[i].wrapping_add(e);
         }
         r
     }
