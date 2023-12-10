@@ -97,14 +97,9 @@ pub async fn pika_eval(p: &mut MPCParty<BasicOffline>, x_share:&RingElm)->RingEl
 fn load_func_db()->Vec<f32>{
     let mut ret: Vec<f32> = Vec::new();
 
-    for i in 0..TOTAL_BITS {
-        let mut temp: Vec<f32> = Vec::new();
-        match read_file(&format!("../data/func_database/slice_{}.bin", i)) {
-            Ok(value) => temp = value,
-            Err(e) => println!("Error reading file: {}", e),  // Or handle the error as needed
-        }
-
-        ret.append(&mut temp)
+    match read_file("../data/func_database.bin") {
+        Ok(value) => ret = value,
+        Err(e) => println!("Error reading file: {}", e),  // Or handle the error as needed
     }
     ret
 }

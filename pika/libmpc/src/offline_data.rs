@@ -115,34 +115,38 @@ impl BasicOffline{
         wVec_1.push(w1);
 
         //Offline-Step2. Function truth table
-        let mut func_truth_table: Vec<f32> = Vec::new();
+        let mut positive_encoding: Vec<f32> = Vec::new();
+        let mut negative_encoding: Vec<f32> = Vec::new();
 
-        for i in 0..TOTAL_NUMBERS {
+        for i in 0..TOTAL_NUMBERS/2 {
             let integer_part = i >> FLOAT_BITS;
             let fractional_part = i & ((1 << FLOAT_BITS) - 1);
+            let f32_value = ((integer_part << FLOAT_BITS) | fractional_part) as f32 / (1 << FLOAT_BITS) as f32;
 
-            let combined_value = (integer_part << FLOAT_BITS) | fractional_part;
-
-            // FIXME ?? at index 0 and 32768 it is both times 0 (or -0) with sigmoid 0.5 (exact)
-            // It should be (-2^k-1, 2^k-1], index 0 shouldn't come into play
-            let scaled_value = combined_value as f32 / (1 << FLOAT_BITS) as f32;
-            let f32_value = if i < TOTAL_NUMBERS / 2 {
-                scaled_value
+            if i > 0 {
+                positive_encoding.push(sigmoid(f32_value));
+                negative_encoding.push(sigmoid(-f32_value));
             } else {
-                -(scaled_value / (1 << INTEGER_BITS-1) as f32) + 1.0
-            };
-
-            // println!(
-            //     "f32 value: {} (binary representation: {:07b} | {:09b})",
-            //     f32_value, integer_part, fractional_part
-            // );
-
-            func_truth_table.push(sigmoid(f32_value));
+                // Here, 0 is only processed once (as -0)
+                // This is done to have equal length postitive and negative encodings
+                negative_encoding.push(sigmoid(-f32_value));
+            }
         }
+        // In the paper the database is generated for numbers (-2^(k-1), 2^(k-1)]
+        // The inclusion at the right end of the group is accounted for here
+        // Thus 0 is assigned to the negative encoding 
+        positive_encoding.push(sigmoid(64f32));
 
-        // println!("Number {} || Sigmoid {}", scaled_values_vec[0], func_truth_table[0]);
-        // for k in 32767..32778 {
-        //     println!("Number {} || Sigmoid {}", scaled_values_vec[k], func_truth_table[k]);
+        let func_truth_table: Vec<f32> = [&positive_encoding[..], &negative_encoding[..]].concat();
+        // for i in 0..10 {
+        //     println!("{}", func_truth_table[i as usize]);
+        // }
+        // for i in TOTAL_NUMBERS/2-5..TOTAL_NUMBERS/2+5 {
+        //     println!("{}", func_truth_table[i as usize]);
+        // }
+
+        // for i in TOTAL_NUMBERS-11..TOTAL_NUMBERS-1 {
+        //     println!("{}", func_truth_table[i as usize]);
         // }
 
         let size: usize = 1;
@@ -150,13 +154,6 @@ impl BasicOffline{
         let mut beavertuples1 = Vec::new();
 
         BeaverTuple::genBeaver(&mut beavertuples0, &mut beavertuples1, &seed, size);
-        // FIXME don't save to file, takes too much time and is needless
-        for i in 0..TOTAL_BITS {
-            let temp_slice = &func_truth_table[
-                i*(func_truth_table.len()/TOTAL_BITS)..(i+1)*(func_truth_table.len()/TOTAL_BITS)
-            ];
-            write_file(&format!("../data/func_database/slice_{}.bin", i), &temp_slice);
-        }
     
         write_file("../data/k0.bin", &dpf_0);
         write_file("../data/k1.bin", &dpf_1);
@@ -169,6 +166,8 @@ impl BasicOffline{
 
         write_file("../data/bvt0.bin", &beavertuples0);
         write_file("../data/bvt1.bin", &beavertuples1);
+
+        write_file("../data/func_database.bin", &func_truth_table);
     }
 }
 
