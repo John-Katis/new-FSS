@@ -77,18 +77,27 @@ pub async fn pika_eval(p: &mut MPCParty<BasicOffline>, x_share:&RingElm)->RingEl
 
     println!("---------- Beaver Triple ---------- ----------");
     
-    // TODO this should be happening in online
-    // TODO exchange values a*uw or b*uw
-    // FIXME I am using the wrong beaver triple?
-    ret = p.offlinedata.beavers[0].mul_compute(
-        p.netlayer.is_server,
-        &u,
-        &p.offlinedata.w_share[0]
+    let beaver_this_half: Vec<u8> = p.offlinedata.beavers[0].beaver_mul0(
+        u,
+        p.offlinedata.w_share[0]
     );
 
-    println!("BEAVER TRIPLE RESULT");
-    ret.print();
-    println!();
+    println!("THIS HALF FOR BEAVER TRIPLE:");
+    println!("{:?}", beaver_this_half);
+
+    let beaver_other_half: Vec<u8> = p.netlayer.exchange_byte_vec(&beaver_this_half).await;
+
+    println!("OTHER HALF FOR BEAVER TRIPLE:");
+    println!("{:?}", beaver_other_half);
+
+    let beaver_secret_share: RingElm = p.offlinedata.beavers[0].beaver_mul1(
+        p.netlayer.is_server,
+        &beaver_other_half
+    );
+
+    println!("BEAVER SECRET SHARE:");
+    beaver_secret_share.print();
+    println!("");
 
     ret
 }
