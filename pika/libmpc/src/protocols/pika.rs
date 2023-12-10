@@ -10,8 +10,9 @@ use std::sync::{Arc, Mutex};
 pub const TOTAL_BITS:usize = 32;
 
 pub async fn pika_eval(p: &mut MPCParty<BasicOffline>, x_share:&RingElm)->RingElm{
-
+    println!("");
     println!("---------- Input ---------- ----------");
+    println!("");
 
     println!("CURRENT SHARE (u32 ring):");
     x_share.print();
@@ -23,10 +24,10 @@ pub async fn pika_eval(p: &mut MPCParty<BasicOffline>, x_share:&RingElm)->RingEl
 
     println!("R SHARE (u16 domain):");
     println!("{}", p.offlinedata.r_share[0]);
-
-    let mut ret = RingElm::zero();
     
+    println!("");
     println!("---------- Mask x ---------- ----------");
+    println!("");
 
     // Protocol 2(a) - reconstruct x=r-a(mod2^k) -> r: random val, a: secret sharing of user input
     let quantized_x_share = x_share.quantize_16();
@@ -41,7 +42,9 @@ pub async fn pika_eval(p: &mut MPCParty<BasicOffline>, x_share:&RingElm)->RingEl
     println!("MASK X VALUE (u16 domain):");
     println!("{}", mask[0]);
 
+    println!("");
     println!("---------- EvalAll ---------- ----------");
+    println!("");
 
     // Protocol 2(b) - compute yσ (EvalAll routine -> implement in DPF key)
     let y_vec = p.offlinedata.k_share[0].evalAll();
@@ -50,7 +53,9 @@ pub async fn pika_eval(p: &mut MPCParty<BasicOffline>, x_share:&RingElm)->RingEl
     let func_database = load_func_db();
     println!("FUNC DB LENGTH: {}", func_database.len());
 
+    println!("");
     println!("---------- u Calculation (DB lookup) ----------");
+    println!("");
 
     let mut u: RingElm = RingElm::from(0u32);
     
@@ -75,7 +80,9 @@ pub async fn pika_eval(p: &mut MPCParty<BasicOffline>, x_share:&RingElm)->RingEl
     u.print();
     println!("");
 
+    println!("");
     println!("---------- Beaver Triple ---------- ----------");
+    println!("");
     
     let beaver_this_half: Vec<u8> = p.offlinedata.beavers[0].beaver_mul0(
         u,
@@ -99,7 +106,7 @@ pub async fn pika_eval(p: &mut MPCParty<BasicOffline>, x_share:&RingElm)->RingEl
     beaver_secret_share.print();
     println!("");
 
-    ret
+    beaver_secret_share
 }
 
 fn load_func_db()->Vec<f32>{
