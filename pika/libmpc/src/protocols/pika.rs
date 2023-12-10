@@ -47,8 +47,7 @@ pub async fn pika_eval(p: &mut MPCParty<BasicOffline>, x_share:&RingElm)->RingEl
     let y_vec = p.offlinedata.k_share[0].evalAll();
     println!("y_vec LENGTH: {:?}",y_vec.len());
 
-    // FIXME very slow - no need to split into 16 files - fix in offline_data
-    let func_database = load_func_db(); // -> load works but store is not done correctly -> load 32 files
+    let func_database = load_func_db();
     println!("FUNC DB LENGTH: {}", func_database.len());
 
     println!("---------- u Calculation (DB lookup) ----------");
