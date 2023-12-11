@@ -55,11 +55,6 @@ impl RingElm {
     pub fn to_u8_vec(&self) -> Vec<u8> {
         self.value.to_be_bytes().to_vec()
     }
-
-    pub fn quantize_16(&self) -> u16 {
-        (self.value >> 16) as u16
-    }
-
 }
 
 /*******/

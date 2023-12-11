@@ -88,16 +88,15 @@ impl BasicOffline{
         let mut wVec_0: Vec<RingElm> = Vec::new();
         let mut wVec_1: Vec<RingElm> = Vec::new();
 
-        // TODO need to generate r shares with u16 representation
-        let r1: &[bool] = &a_bits[..bounded_domain_bits];
-        let r2: &[bool] = &a_bits[bounded_domain_bits..bounded_domain_bits*2];
-        let binding = r1.iter().zip(r2.iter()).map(|(&x, &y)| x || y).collect::<Vec<_>>();
-        let r: &[bool] = binding.as_slice();
+        let r: &[bool] = &a_bits[..bounded_domain_bits];
+        let r0: &[bool] = &a_bits[bounded_domain_bits..bounded_domain_bits*2];
+        let binding = r.iter().zip(r0.iter()).map(|(&x, &y)| x && !y).collect::<Vec<_>>();
+        let r1: &[bool] = binding.as_slice();
         
+        let r0_int: u16 = bits_to_u16(r0);
         let r1_int: u16 = bits_to_u16(r1);
-        let r2_int: u16 = bits_to_u16(r2);
-        rVec_0.push(r1_int);
-        rVec_1.push(r2_int);
+        rVec_0.push(r0_int);
+        rVec_1.push(r1_int);
 
         let (dpf_key0, dpf_key1, control_bit) = DPFKey::gen(&r, &beta);
         dpf_0.push(dpf_key0);

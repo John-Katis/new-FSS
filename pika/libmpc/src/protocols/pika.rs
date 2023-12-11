@@ -9,14 +9,13 @@ use std::sync::{Arc, Mutex};
 
 pub const TOTAL_BITS:usize = 32;
 
-pub async fn pika_eval(p: &mut MPCParty<BasicOffline>, x_share:&RingElm)->RingElm{
+pub async fn pika_eval(p: &mut MPCParty<BasicOffline>, x_share:&u16)->RingElm{
     println!("");
     println!("---------- Input ---------- ----------");
     println!("");
 
-    println!("CURRENT SHARE (u32 ring):");
-    x_share.print();
-    println!("");
+    println!("CURRENT SHARE (u16 ring):");
+    println!("{}", x_share);
 
     println!("W SHARE (u32 ring): ");
     p.offlinedata.w_share[0].print();
@@ -30,13 +29,9 @@ pub async fn pika_eval(p: &mut MPCParty<BasicOffline>, x_share:&RingElm)->RingEl
     println!("");
 
     // Protocol 2(a) - reconstruct x=r-a(mod2^k) -> r: random val, a: secret sharing of user input
-    let quantized_x_share = x_share.quantize_16();
-
-    println!("QUANTIZED INPUT SHARE (u16 domain):");
-    println!("{}", quantized_x_share);
 
     let mut party_mask: Vec<u16> = Vec::new();
-    party_mask.push(p.offlinedata.r_share[0].wrapping_sub(quantized_x_share));
+    party_mask.push(p.offlinedata.r_share[0].wrapping_sub(*x_share));
     let mask = p.netlayer.exchange_u16_vec(party_mask).await;
 
     println!("MASK X VALUE (u16 domain):");
@@ -107,6 +102,8 @@ pub async fn pika_eval(p: &mut MPCParty<BasicOffline>, x_share:&RingElm)->RingEl
     println!("");
 
     beaver_secret_share
+
+    // TODO check correctness
 }
 
 fn load_func_db()->Vec<f32>{

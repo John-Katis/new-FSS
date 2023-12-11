@@ -4,7 +4,7 @@ use libmpc::mpc_platform::NetInterface;
 
 use fss::{prg::*, RingElm};
 use libmpc::offline_data::BasicOffline;
-use fss::bits_to_u32;
+use fss::{bits_to_u32,bits_to_u16};
 
 use std::fs::File;
 use std::io::Write;
@@ -53,12 +53,9 @@ async fn main() {
     stream.set_key(&seed.key);
 
     // TODO Implement batch here (10^0 - 10^5 used in Pika paper with bad scalability)
-    let x_share_bits = stream.next_bits(INPUT_BITS*2);
+    let x_share_bits = stream.next_bits(BOUNDED_DOMAIN_BITS*2);
     let index =  if is_server {String::from("0")} else {String::from("1")};
     let index_ID = if is_server{0u8} else {1u8};
-
-    // let mut f_x = File::create(format!( "../test/x{}.bin", &index)).expect("create failed");
-    // f_x.write_all(&bincode::serialize(&x_share).expect("Serialize x-bool-share error")).expect("Write x-bool-share error.");
 
     let mut result:RingElm = RingElm::zero();
     let mut netlayer = NetInterface::new(is_server,LAN_ADDRESS).await;
@@ -69,12 +66,15 @@ async fn main() {
     let mut p: MPCParty<BasicOffline> = MPCParty::new(offlinedata, netlayer);
     p.setup(10, 10);
 
+    let input_x: &[bool] = &x_share_bits[..BOUNDED_DOMAIN_BITS];
+    let share_x0: &[bool] = &x_share_bits[BOUNDED_DOMAIN_BITS..];
+    let binding = input_x.iter().zip(share_x0.iter()).map(|(&x, &y)| x && !y).collect::<Vec<_>>();
+    let share_x1 = binding.as_slice();
+
     if is_server{
-        let mut cur_share = RingElm::from( bits_to_u32(&x_share_bits[..INPUT_BITS]));
-        result = pika_eval(&mut p, &cur_share).await;
+        result = pika_eval(&mut p, &bits_to_u16(share_x0)).await;
     }else{
-        let mut cur_share = RingElm::from( bits_to_u32(&x_share_bits[INPUT_BITS..]));
-        result = pika_eval(&mut p, &cur_share).await;
+        result = pika_eval(&mut p, &bits_to_u16(share_x1)).await;
     }
 
     let mut f_ret = File::create(format!( "../test/ret{}.bin", &index)).expect("create failed");
