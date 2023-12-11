@@ -53,14 +53,18 @@ pub async fn pika_eval(p: &mut MPCParty<BasicOffline>)->RingElm{
     println!("");
 
     let mut u: RingElm = RingElm::from(0u32);
-    
+
     // Protocol 2(c) - compute u
-    for i in 0..y_vec.len() {
-        let mut shift_index: u16 = i as u16;
+    for i in 0..u16::MAX {
+        let mut shift_index: u16 = i;
         shift_index = shift_index.wrapping_add(mask[0]);
 
+        if i <= u16::MAX - mask[0] {
+            shift_index = shift_index - 1u16;
+        }
+
         if y_vec[shift_index as usize] {
-            let mut temp = RingElm::from(func_database[i]);
+            let mut temp = RingElm::from(func_database[i as usize]);
             
             // -1^σ
             if !p.netlayer.is_server {

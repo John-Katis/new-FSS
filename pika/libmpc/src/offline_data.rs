@@ -82,7 +82,6 @@ impl BasicOffline{
         let mut stream = FixedKeyPrgStream::new();
         stream.set_key(&seed.key);
 
-        //Offline-Step-1. Set DPF Parameters: k, a, w
         let share_gen_bits = stream.next_bits(4*BOUNDED_DOMAIN+INPUT_DOMAIN);
 
         let beta: bool = true; // RingElm::from(1u32);
@@ -102,10 +101,10 @@ impl BasicOffline{
 // R NON-ZERO INDEX GENERATION AND SHARES
         let mut rVec_0: Vec<u16> = Vec::new();
         let mut rVec_1: Vec<u16> = Vec::new();
-        // FIXME if this is removed, generate less share_gen_bits
-        // let r: &[bool] = &share_gen_bits[2*BOUNDED_DOMAIN..3*BOUNDED_DOMAIN];
+
+        let r: &[bool] = &share_gen_bits[2*BOUNDED_DOMAIN..3*BOUNDED_DOMAIN];
         let r0: &[bool] = &share_gen_bits[3*BOUNDED_DOMAIN..4*BOUNDED_DOMAIN];
-        let binding_r = x.iter().zip(r0.iter()).map(|(&x, &y)| x && !y).collect::<Vec<_>>();
+        let binding_r = r.iter().zip(r0.iter()).map(|(&x, &y)| x && !y).collect::<Vec<_>>();
         let r1: &[bool] = binding_r.as_slice();
 
         rVec_0.push(bits_to_u16(r0));
@@ -114,8 +113,10 @@ impl BasicOffline{
 // DPF KEYS BASED ON R - EXTRACT CONTROL BIT
         let mut dpf_0: Vec<DPFKey<bool>> = Vec::new();
         let mut dpf_1: Vec<DPFKey<bool>> = Vec::new();
-        // FIXME currently using x as the input for the DPF gen (previously generated random r)
-        let (dpf_key0, dpf_key1, control_bit) = DPFKey::gen(&x, &beta);
+        // FIXME the generation and use of x and r can cause issues
+        // namely, generating less bits in line share_gen_bits, reduces accuracy
+        // Also tried x as input for the dpf and had less accuracy than the current configuration
+        let (dpf_key0, dpf_key1, control_bit) = DPFKey::gen(&r, &beta);
         dpf_0.push(dpf_key0);
         dpf_1.push(dpf_key1);
 
@@ -135,29 +136,54 @@ impl BasicOffline{
         wVec_1.push(w1);
 
 // FUNCTION TRUTH TABLE
-        let mut positive_encoding: Vec<f32> = Vec::new();
-        let mut negative_encoding: Vec<f32> = Vec::new();
+        // let mut positive_encoding: Vec<f32> = Vec::new();
+        // let mut negative_encoding: Vec<f32> = Vec::new();
 
-        for i in 0..TOTAL_NUMBERS/2 {
-            let integer_part = i >> FLOAT_BITS;
-            let fractional_part = i & ((1 << FLOAT_BITS) - 1);
-            let f32_value = ((integer_part << FLOAT_BITS) | fractional_part) as f32 / (1 << FLOAT_BITS) as f32;
+        // for i in 0..TOTAL_NUMBERS/2 {
+        //     let integer_part = i >> FLOAT_BITS;
+        //     let fractional_part = i & ((1 << FLOAT_BITS) - 1);
+        //     let f32_value = ((integer_part << FLOAT_BITS) | fractional_part) as f32 / (1 << FLOAT_BITS) as f32;
             
-            if i > 0 {
-                positive_encoding.push(sigmoid(f32_value));
-                negative_encoding.push(sigmoid(-f32_value));
-            } else {
-                // Here, 0 is only processed once (as -0)
-                // This is done to have equal length postitive and negative encodings
-                negative_encoding.push(sigmoid(-f32_value));
-            }
-        }
-        // In the paper the database is generated for numbers (-2^(k-1), 2^(k-1)]
-        // The inclusion at the right end of the group is accounted for here
-        // Thus 0 is assigned to the negative encoding 
-        positive_encoding.push(sigmoid(64f32));
+        //     if i > 0 {
+        //         positive_encoding.push(sigmoid(f32_value));
+        //         negative_encoding.push(sigmoid(-f32_value));
+        //     } else {
+        //         // Here, 0 is only processed once (as -0)
+        //         // This is done to have equal length postitive and negative encodings
+        //         negative_encoding.push(sigmoid(-f32_value));
+        //     }
+        // }
+        // // In the paper the database is generated for numbers (-2^(k-1), 2^(k-1)]
+        // // The inclusion at the right end of the group is accounted for here
+        // // Thus 0 is assigned to the negative encoding 
+        // positive_encoding.push(sigmoid(64f32));
 
-        let func_truth_table: Vec<f32> = [&positive_encoding[..], &negative_encoding[..]].concat();
+        // let func_truth_table: Vec<f32> = [&positive_encoding[..], &negative_encoding[..]].concat();
+        let mut func_truth_table: Vec<f32> = Vec::new();
+
+        for i in 0..u16::MAX {
+            let sign = i & (1 << 15) != 0;
+            let rest_bits = i & !(1 << 15);
+
+            let mut f32_number = if sign {
+                (-(rest_bits as f32) / (1 << FLOAT_BITS) as f32) 
+            } else {
+                rest_bits as f32 / (1 << FLOAT_BITS) as f32
+            };
+
+            if i == (u16::MAX / 2) + 1 {
+                f32_number = 64f32
+            };
+
+            let sigmoid_val = sigmoid(f32_number);
+            func_truth_table.push(sigmoid_val);
+            // if i == (u16::MAX / 2) + 1 {
+            //     println!(
+            //         "u16: {:016b} || Sign: {} || Rest: {:015b} || f32: {} || sigmoid: {}",
+            //         i, sign, rest_bits, f32_number, sigmoid_val
+            //     );
+            // }            
+        }
 
 // BEAVER TRIPLE
         let size: usize = 1;

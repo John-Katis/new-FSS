@@ -4,7 +4,7 @@ use libmpc::mpc_platform::NetInterface;
 
 use fss::{prg::*, RingElm};
 use libmpc::offline_data::BasicOffline;
-use fss::{bits_to_u32,bits_to_u16};
+use fss::bits_to_u16;
 
 use std::fs::File;
 use std::io::Write;
@@ -45,10 +45,6 @@ async fn main() {
     }
     
     gen_offlinedata();
-
-    let seed = if is_server {PrgSeed::zero()} else {PrgSeed::one()};//Guarantee same input bits to ease the debug process
-    let mut stream = FixedKeyPrgStream::new();
-    stream.set_key(&seed.key);
 
     // TODO Implement batch here (10^0 - 10^5 used in Pika paper with bad scalability)
     let index =  if is_server {String::from("0")} else {String::from("1")};

@@ -87,12 +87,13 @@ fn find_first_difference_index(v1: &[bool], v2: &[bool]) -> usize {
     v1.len() as usize // this can be moved up for efficiency if vectors are equal - but this shouldn't be the case - two vectors in evalAll will never be exactly same
 }
 // ----- ----- ----- ----- ----- newly added ----- ----- ----- ----- -----
-
-impl<T> DPFKey<T> where T: prg::FromRng + Clone + Group + std::fmt::Debug
+// TODO remove PartialEq - not needed (connected to print statements in evalAll)
+impl<T> DPFKey<T> where T: prg::FromRng + Clone + Group + std::fmt::Debug + std::cmp::PartialEq
 {
     pub fn gen(alpha_bits: &[bool], value:&T) -> (DPFKey<T>, DPFKey<T>, bool) {
-        // let root_seeds = (prg::PrgSeed::zero(), prg::PrgSeed::one());
-        let root_seeds = (prg::PrgSeed::random(), prg::PrgSeed::random());
+        // FIXME when these were random, the result would always change
+        let root_seeds = (prg::PrgSeed::zero(), prg::PrgSeed::one());
+        // let root_seeds = (prg::PrgSeed::random(), prg::PrgSeed::random());
         let root_bits = (false, true);
 
         let mut seeds = root_seeds.clone();
@@ -180,32 +181,39 @@ impl<T> DPFKey<T> where T: prg::FromRng + Clone + Group + std::fmt::Debug
         let mut res: T;
         let mut prev_state: EvalState;
         let mut prev_num_bool: Vec<bool>;
-        
+
         let max_value: u16 = u16::MAX;
-        let half_value: u16 = max_value / 2;
-        
+        let half_value: u16 = (max_value / 2) + 1;
+     
         for i in 0..2 {
             // Start from 0 and 1^k/2 outside of iteration
-            let init_16b: u16 = i*(half_value+1);
+            let init_16b: u16 = i * half_value;
             let mut init_16b_bool_vec: Vec<bool> = u16_to_boolean_vector(init_16b);
 
-            let iter_start: u16 = i*(half_value+1);
-            let iter_end: u16 = iter_start + half_value;
+            let iter_end: u16 = if i == 0 {
+                half_value
+            } else {
+                max_value
+            };
 
             let (res, state) = Self::stateful_eval_no_prev_state(&self, &init_16b_bool_vec);
             // println!("{} CORR {:?} COMP {:?}", init_16b, res, Self::eval(&self, &init_16b_bool_vec));
+            // if Self::eval(&self, &init_16b_bool_vec) != res {
+            //     println!("NUMBER {} CORR {:?} COMP {:?}", init_16b, res, Self::eval(&self, &init_16b_bool_vec));
+            // }
             prev_state = state;
+            prev_num_bool = init_16b_bool_vec;
             y_vec.push(res);
 
-            prev_num_bool = init_16b_bool_vec;
-            
-            for num in iter_start..iter_end {
+            for num in init_16b+1..iter_end {
                 let mut num_bool_vec: Vec<bool> = u16_to_boolean_vector(num);
                 let idx_diff = find_first_difference_index(&prev_num_bool, &num_bool_vec);
 
                 let (res, state) = Self::stateful_eval(&self, &num_bool_vec, &prev_state, idx_diff);
                 // println!("CORR {:?} COMP {:?}", Self::eval(&self, &num_bool_vec), res);
-
+                // if Self::eval(&self, &num_bool_vec) != res {
+                //     println!("NUMBER {} CORR {:?} COMP {:?}", init_16b, res, Self::eval(&self, &num_bool_vec));
+                // }
                 y_vec.push(res);
 
                 prev_state = state;
