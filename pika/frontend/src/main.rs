@@ -15,8 +15,6 @@ use std::thread::sleep;
 use std::time::Duration;
 use fss::Group;
 
-pub const INPUT_BITS:usize = 32;
-pub const BOUNDED_DOMAIN_BITS:usize = 16; 
 const LAN_ADDRESS: &'static str = "127.0.0.1:8088";
 const WAN_ADDRESS: &'static str = "45.63.6.86:8088";
 pub const TEST_WAN_NETWORK: bool = true;
@@ -53,7 +51,6 @@ async fn main() {
     stream.set_key(&seed.key);
 
     // TODO Implement batch here (10^0 - 10^5 used in Pika paper with bad scalability)
-    let x_share_bits = stream.next_bits(BOUNDED_DOMAIN_BITS*2);
     let index =  if is_server {String::from("0")} else {String::from("1")};
     let index_ID = if is_server{0u8} else {1u8};
 
@@ -66,15 +63,10 @@ async fn main() {
     let mut p: MPCParty<BasicOffline> = MPCParty::new(offlinedata, netlayer);
     p.setup(10, 10);
 
-    let input_x: &[bool] = &x_share_bits[..BOUNDED_DOMAIN_BITS];
-    let share_x0: &[bool] = &x_share_bits[BOUNDED_DOMAIN_BITS..];
-    let binding = input_x.iter().zip(share_x0.iter()).map(|(&x, &y)| x && !y).collect::<Vec<_>>();
-    let share_x1 = binding.as_slice();
-
     if is_server{
-        result = pika_eval(&mut p, &bits_to_u16(share_x0)).await;
+        result = pika_eval(&mut p).await;
     }else{
-        result = pika_eval(&mut p, &bits_to_u16(share_x1)).await;
+        result = pika_eval(&mut p).await;
     }
 
     let mut f_ret = File::create(format!( "../test/ret{}.bin", &index)).expect("create failed");
@@ -87,7 +79,7 @@ fn gen_offlinedata(){
     let offline_timer = Instant::now();
 
     let offline = BasicOffline::new();
-    offline.genData(&PrgSeed::zero(), INPUT_BITS, BOUNDED_DOMAIN_BITS);
+    offline.genData(&PrgSeed::zero());
 
     println!("Offline key generation time:{:?}", offline_timer.elapsed());
 }
