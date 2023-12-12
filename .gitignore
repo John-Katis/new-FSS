@@ -1,6 +1,8 @@
 # Produced at runtime
 /pika/data/**.bin
 /pika/test/**.bin
+/pika/test/results/p0/**.bin
+/pika/test/results/p1/**.bin
 
 # Produced at compile time
 **/target
