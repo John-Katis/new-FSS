@@ -174,7 +174,7 @@ impl BasicOffline{
             if i == (u16::MAX / 2) + 1 {
                 f32_number = 64f32
             };
-
+            // TODO check value of sigmoid, print binary for sigmoid(x)
             let sigmoid_val = sigmoid(f32_number);
             func_truth_table.push(sigmoid_val);
             // if i == (u16::MAX / 2) + 1 {
