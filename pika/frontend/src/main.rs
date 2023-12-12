@@ -44,9 +44,7 @@ async fn main() {
         eprintln!("No arguments provided.");
     }
     
-    gen_offlinedata();
-
-    // TODO Implement batch here (10^0 - 10^5 used in Pika paper with bad scalability)
+    let offline_time: f32 = gen_offlinedata().as_secs_f32();
     let index =  if is_server {String::from("0")} else {String::from("1")};
     let index_ID = if is_server{0u8} else {1u8};
 
@@ -65,17 +63,35 @@ async fn main() {
         result = pika_eval(&mut p).await;
     }
 
+    println!("");
+    println!("---------- Benchmarking ---------- ----------");
+    println!("");
+
+    p.netlayer.print_benchmarking().await;
+
+    // ELEMENTS OF VECTOR
+    // index 0: online duration in seconds
+    // index 1: rounds
+    // index 2: overhead
+    // index 3: offline duration in seconds
+    let mut benchmarking_vec: Vec<f32> = p.netlayer.return_benchmarking().await;
+    benchmarking_vec.push(offline_time);
+    println!("benchmarking vector: {:?}", benchmarking_vec);
+    println!("");
+
+    let mut f_benchmarking = File::create(format!( "../test/results/p0/benchamrking_{}", &index)).expect("create failed");
+    f_benchmarking.write_all(&bincode::serialize(&benchmarking_vec).expect("Serialize cmp-bool-share error")).expect("Write cmp-bool-share error.");
+
     let mut f_ret = File::create(format!( "../test/ret{}.bin", &index)).expect("create failed");
     f_ret.write_all(&bincode::serialize(&result).expect("Serialize cmp-bool-share error")).expect("Write cmp-bool-share error.");
-
-    // TODO Need another round of communication - exchange ring vector method
 }
 
-fn gen_offlinedata(){
+fn gen_offlinedata()->Duration{
     let offline_timer = Instant::now();
 
     let offline = BasicOffline::new();
     offline.genData(&PrgSeed::zero());
-
-    println!("Offline key generation time:{:?}", offline_timer.elapsed());
+    let elapsed_time = offline_timer.elapsed();
+    println!("Offline key generation time:{:?}", elapsed_time);
+    elapsed_time
 }

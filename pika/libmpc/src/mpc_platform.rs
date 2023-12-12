@@ -66,6 +66,15 @@ impl NetInterface{
         println!("Computation time: {:?} \n",self.timer.elapsed());
     }
 
+    pub async fn return_benchmarking(&mut self)-> Vec<f32> {
+        let mut benchmarking_vec: Vec<f32> = Vec::new();
+        benchmarking_vec.push(self.timer.elapsed().as_secs_f32());
+        benchmarking_vec.push(self.rounds_occured as f32);
+        benchmarking_vec.push(self.received as f32);
+
+        benchmarking_vec
+    }
+
     pub async fn exchange_a_bool(&mut self, msg: bool)->bool{
         let mut buf: [u8; 1] = [0; 1];
         

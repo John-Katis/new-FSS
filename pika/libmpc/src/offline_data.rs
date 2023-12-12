@@ -89,7 +89,7 @@ impl BasicOffline{
 // INPUT X GENERATION AND SHARES
         let mut xVec0: Vec<u16> = Vec::new();
         let mut xVec1: Vec<u16> = Vec::new();
-
+        // TODO Implement batch here (10^0 - 10^5 used in Pika paper with bad scalability)
         let x: &[bool] = &share_gen_bits[0*BOUNDED_DOMAIN..1*BOUNDED_DOMAIN];
         let x0: &[bool] = &share_gen_bits[1*BOUNDED_DOMAIN..2*BOUNDED_DOMAIN];
         let binding_x = x.iter().zip(x0.iter()).map(|(&x, &y)| x && !y).collect::<Vec<_>>();
@@ -166,7 +166,7 @@ impl BasicOffline{
             let rest_bits = i & !(1 << 15);
 
             let mut f32_number = if sign {
-                (-(rest_bits as f32) / (1 << FLOAT_BITS) as f32) 
+                -(rest_bits as f32) / (1 << FLOAT_BITS) as f32
             } else {
                 rest_bits as f32 / (1 << FLOAT_BITS) as f32
             };

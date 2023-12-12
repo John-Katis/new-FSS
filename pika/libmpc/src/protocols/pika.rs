@@ -106,12 +106,6 @@ pub async fn pika_eval(p: &mut MPCParty<BasicOffline>)->RingElm{
     println!("");
 
     println!("");
-    println!("---------- Benchmarking ---------- ----------");
-    println!("");
-
-    p.netlayer.print_benchmarking().await;
-
-    println!("");
     println!("---------- Correctness ---------- ----------");
     println!("");
 
@@ -132,7 +126,6 @@ pub async fn pika_eval(p: &mut MPCParty<BasicOffline>)->RingElm{
     let mut result: f32 = beaver_comb[0].to_u32().unwrap() as f32;
     let f32_number = result / (1 << 16) as f32;
 
-    // FIXME this always gives different results
     println!("Original u32 number as f32: {}", result);
     println!("Interpreted f32 number: {}", f32_number);
 
