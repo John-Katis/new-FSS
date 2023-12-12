@@ -78,7 +78,7 @@ async fn main() {
     benchmarking_vec.push(offline_time);
     println!("benchmarking vector: {:?}", benchmarking_vec);
     println!("");
-    // TODO untrack .bin in test/results/p0 or p1
+    // TODO add offline overhead in benchmarking!
     let mut f_benchmarking = File::create(format!( "../test/results/p0/benchamrking_{}", &index)).expect("create failed");
     f_benchmarking.write_all(&bincode::serialize(&benchmarking_vec).expect("Serialize cmp-bool-share error")).expect("Write cmp-bool-share error.");
 
