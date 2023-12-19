@@ -10,6 +10,12 @@ use std::sync::{Arc, Mutex};
 pub const TOTAL_BITS:usize = 32;
 
 pub async fn pika_eval(p: &mut MPCParty<BasicOffline>)->RingElm{
+    // TODO iterate through the length of the vectors in p
+    // ITER1 prep input for 1st comms round
+    // TODO exchange all party masks in one vector (1 communication round)
+    // ITER2 prep input for 2nd comms round
+    // TODO same for beaver - calculate all u, beaver this half, exchange all in one (1 communication round)
+    // ITER3 prep pika_eval output vector
     println!("");
     println!("---------- Party Shares ---------- ----------");
     println!("");

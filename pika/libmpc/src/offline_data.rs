@@ -12,6 +12,7 @@ use bincode::Error;
 use std::fs::File;
 use std::io::Write;
 use std::io::Read;
+use std::mem;
 use serde::de::DeserializeOwned;
 
 pub const INTERVALS_AMOUNT:usize = 1000;
@@ -44,11 +45,12 @@ pub struct BasicOffline {
     pub r_share: Vec<u16>, //alpha
     pub w_share: Vec<RingElm>,
     pub beavers: Vec<BeaverTuple>,
+    pub overhead: f32,
 }
 
 impl BasicOffline{
     pub fn new() -> Self{
-        Self{k_share: Vec::new(), x_share: Vec::new(), r_share: Vec::new(), w_share: Vec::new(), beavers: Vec::new()}
+        Self{k_share: Vec::new(), x_share: Vec::new(), r_share: Vec::new(), w_share: Vec::new(), beavers: Vec::new(), overhead: 0f32}
     }
 
     pub fn loadData(&mut self,idx:&u8){
@@ -76,9 +78,15 @@ impl BasicOffline{
             Ok(value) => self.beavers = value,
             Err(e) => println!("Error reading beaver tuple file: {}", e),  // Or handle the error as needed
         }
+
+        match read_file("../data/overhead.bin") {
+            Ok(value) => self.overhead = value,
+            Err(e) => println!("Error reading beaver tuple file: {}", e),  // Or handle the error as needed
+        }
     }
 
     pub fn genData(&self,seed: &PrgSeed){
+        let mut overhead: f32 = 0f32;
         let mut stream = FixedKeyPrgStream::new();
         stream.set_key(&seed.key);
 
@@ -110,6 +118,8 @@ impl BasicOffline{
         rVec_0.push(bits_to_u16(r0));
         rVec_1.push(bits_to_u16(r1));
 
+        overhead += (rVec_0.len() * mem::size_of::<u16>()) as f32; // overhead for one share of r
+
 // DPF KEYS BASED ON R - EXTRACT CONTROL BIT
         let mut dpf_0: Vec<DPFKey<bool>> = Vec::new();
         let mut dpf_1: Vec<DPFKey<bool>> = Vec::new();
@@ -119,7 +129,9 @@ impl BasicOffline{
         let (dpf_key0, dpf_key1, control_bit) = DPFKey::gen(&r, &beta);
         dpf_0.push(dpf_key0);
         dpf_1.push(dpf_key1);
-
+        
+        overhead += (4 * mem::size_of::<bool>() + 17 * (16 * mem::size_of::<u8>())) as f32; // dpf key overhead - 17 prg seeds are 1 for root and 16 for cor_words, 4 bool for key_idx, word and cor_words
+        
 // W BIT BASED ON CONTROL BIT
         let mut wVec_0: Vec<RingElm> = Vec::new();
         let mut wVec_1: Vec<RingElm> = Vec::new();
@@ -135,30 +147,9 @@ impl BasicOffline{
         wVec_0.push(w0);
         wVec_1.push(w1);
 
+        overhead += (wVec_0.len() * mem::size_of::<u32>()) as f32; // overhead for one share of w
+
 // FUNCTION TRUTH TABLE
-        // let mut positive_encoding: Vec<f32> = Vec::new();
-        // let mut negative_encoding: Vec<f32> = Vec::new();
-
-        // for i in 0..TOTAL_NUMBERS/2 {
-        //     let integer_part = i >> FLOAT_BITS;
-        //     let fractional_part = i & ((1 << FLOAT_BITS) - 1);
-        //     let f32_value = ((integer_part << FLOAT_BITS) | fractional_part) as f32 / (1 << FLOAT_BITS) as f32;
-            
-        //     if i > 0 {
-        //         positive_encoding.push(sigmoid(f32_value));
-        //         negative_encoding.push(sigmoid(-f32_value));
-        //     } else {
-        //         // Here, 0 is only processed once (as -0)
-        //         // This is done to have equal length postitive and negative encodings
-        //         negative_encoding.push(sigmoid(-f32_value));
-        //     }
-        // }
-        // // In the paper the database is generated for numbers (-2^(k-1), 2^(k-1)]
-        // // The inclusion at the right end of the group is accounted for here
-        // // Thus 0 is assigned to the negative encoding 
-        // positive_encoding.push(sigmoid(64f32));
-
-        // let func_truth_table: Vec<f32> = [&positive_encoding[..], &negative_encoding[..]].concat();
         let mut func_truth_table: Vec<f32> = Vec::new();
 
         for i in 0..u16::MAX {
@@ -174,16 +165,13 @@ impl BasicOffline{
             if i == (u16::MAX / 2) + 1 {
                 f32_number = 64f32
             };
-            // TODO check value of sigmoid, print binary for sigmoid(x)
+
             let sigmoid_val = sigmoid(f32_number);
-            func_truth_table.push(sigmoid_val);
-            // if i == (u16::MAX / 2) + 1 {
-            //     println!(
-            //         "u16: {:016b} || Sign: {} || Rest: {:015b} || f32: {} || sigmoid: {}",
-            //         i, sign, rest_bits, f32_number, sigmoid_val
-            //     );
-            // }            
+
+            func_truth_table.push(sigmoid_val);       
         }
+
+        overhead += (func_truth_table.len() * mem::size_of::<f32>()) as f32; // overhead for the function truth table
 
 // BEAVER TRIPLE
         let size: usize = 1;
@@ -191,6 +179,8 @@ impl BasicOffline{
         let mut beavertuples1 = Vec::new();
 
         BeaverTuple::genBeaver(&mut beavertuples0, &mut beavertuples1, &seed, size);
+
+        overhead += (beavertuples0.len() * (5 * mem::size_of::<u32>())) as f32; // overhead for the beavers generation for 1 party
 
         // ENCODE - DECODE INPUT FOR DEBUGGING!!!
         println!("");
@@ -236,10 +226,12 @@ impl BasicOffline{
         write_file("../data/bvt1.bin", &beavertuples1);
 
         write_file("../data/func_database.bin", &func_truth_table);
+        
+        write_file("../data/overhead.bin", &overhead);
     }
 }
 
 
 fn sigmoid(x: f32) -> f32 {
-    1.0 / (1.0 + (-f32::from(x)).exp())
+    1.0 / (1.0 + std::f32::consts::E.powf(-x))
 }

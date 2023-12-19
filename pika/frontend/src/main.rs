@@ -54,9 +54,11 @@ async fn main() {
     let mut offlinedata = BasicOffline::new();
     offlinedata.loadData(&index_ID);
     netlayer.reset_timer().await;
+    let offline_overhead = offlinedata.overhead;
     let mut p: MPCParty<BasicOffline> = MPCParty::new(offlinedata, netlayer);
     p.setup(10, 10);
 
+    // TODO result as a vector
     if is_server{
         result = pika_eval(&mut p).await;
     }else{
@@ -76,14 +78,18 @@ async fn main() {
     // index 3: offline duration in seconds
     let mut benchmarking_vec: Vec<f32> = p.netlayer.return_benchmarking().await;
     benchmarking_vec.push(offline_time);
+    benchmarking_vec.push(offline_overhead);
     println!("benchmarking vector: {:?}", benchmarking_vec);
     println!("");
-    // TODO add offline overhead in benchmarking!
+    // TODO add offline overhead in benchmarking
+
     let mut f_benchmarking = File::create(format!( "../test/results/p0/benchamrking_{}", &index)).expect("create failed");
     f_benchmarking.write_all(&bincode::serialize(&benchmarking_vec).expect("Serialize cmp-bool-share error")).expect("Write cmp-bool-share error.");
 
     let mut f_ret = File::create(format!( "../test/ret{}.bin", &index)).expect("create failed");
     f_ret.write_all(&bincode::serialize(&result).expect("Serialize cmp-bool-share error")).expect("Write cmp-bool-share error.");
+
+    //TODO also store numeric result (accurate)
 }
 
 fn gen_offlinedata()->Duration{
