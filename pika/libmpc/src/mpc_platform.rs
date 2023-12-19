@@ -68,7 +68,7 @@ impl NetInterface{
 
     pub async fn return_benchmarking(&mut self)-> Vec<f32> {
         let mut benchmarking_vec: Vec<f32> = Vec::new();
-        benchmarking_vec.push(self.timer.elapsed().as_secs_f32());
+        benchmarking_vec.push(self.timer.elapsed().as_secs_f32() * 1000.0);
         benchmarking_vec.push(self.rounds_occured as f32);
         benchmarking_vec.push(self.received as f32);
 
@@ -282,36 +282,42 @@ impl NetInterface{
         r
     }
 
-    pub async fn exchange_byte_vec(&mut self, msg: &Vec<u8>) -> Vec<u8>{
-        let msg_len = msg.len();
+    pub async fn exchange_byte_vec(&mut self, messages: &Vec<Vec<u8>>) -> Vec<Vec<u8>>{
+        let mut return_vec: Vec<Vec<u8>> = Vec::new();
 
-        let mut buf: Vec<u8> = vec![0; msg_len];
-        if let Err(err) = self.writer.write_all(&msg.as_slice()).await{
-            eprintln!("Write to partner failed:{}", err);
-            std::process::exit(-1);
-        }
-        else{
-            // println!("Write to partner {} bytes.", xmsg_len);
-        } // send message to the partner
+        for i in 0..messages.len() {
+            let msg = &messages[i];
+            let msg_len = msg.len();
 
-        match  self.reader.read_exact(&mut buf[0..msg_len]).await{
-            Err(e) => {
-                eprintln!("read from client error: {}", e);
+            let mut buf: Vec<u8> = vec![0; msg_len];
+            if let Err(err) = self.writer.write_all(&msg.as_slice()).await{
+                eprintln!("Write to partner failed:{}", err);
                 std::process::exit(-1);
             }
-            Ok(0) => {
-                println!("client closed.");
-                std::process::exit(-1);
-            }     
-            Ok(n) => {
-                self.received+=msg_len;
-                assert_eq!(n, msg_len);
-                // println!("Receive {} bytes from partner.", n);
-            }        
-        }
-        self.rounds_occured +=1;
+            else{
+                // println!("Write to partner {} bytes.", xmsg_len);
+            } // send message to the partner
 
-        buf   
+            match  self.reader.read_exact(&mut buf[0..msg_len]).await{
+                Err(e) => {
+                    eprintln!("read from client error: {}", e);
+                    std::process::exit(-1);
+                }
+                Ok(0) => {
+                    println!("client closed.");
+                    std::process::exit(-1);
+                }     
+                Ok(n) => {
+                    self.received+=msg_len;
+                    assert_eq!(n, msg_len);
+                    // println!("Receive {} bytes from partner.", n);
+                }        
+            }
+            self.rounds_occured +=1;
+
+            return_vec.push(buf);   
+        }
+        return_vec
     }
 
     pub async fn exchange_u16_vec(&mut self, msg: Vec<u16>) -> Vec<u16>{

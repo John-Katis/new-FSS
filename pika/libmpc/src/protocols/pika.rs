@@ -9,13 +9,9 @@ use std::sync::{Arc, Mutex};
 
 pub const TOTAL_BITS:usize = 32;
 
-pub async fn pika_eval(p: &mut MPCParty<BasicOffline>)->RingElm{
-    // TODO iterate through the length of the vectors in p
-    // ITER1 prep input for 1st comms round
-    // TODO exchange all party masks in one vector (1 communication round)
-    // ITER2 prep input for 2nd comms round
-    // TODO same for beaver - calculate all u, beaver this half, exchange all in one (1 communication round)
-    // ITER3 prep pika_eval output vector
+pub async fn pika_eval(p: &mut MPCParty<BasicOffline>)->Vec<RingElm>{
+    let iter_end: usize = p.offlinedata.x_share.len() as usize;
+
     println!("");
     println!("---------- Party Shares ---------- ----------");
     println!("");
@@ -34,108 +30,127 @@ pub async fn pika_eval(p: &mut MPCParty<BasicOffline>)->RingElm{
     println!("---------- Mask x ---------- ----------");
     println!("");
 
-    // Protocol 2(a) - reconstruct x=r-a(mod2^k) -> r: random val, a: secret sharing of user input
+// Protocol 2(a) - reconstruct x=r-a(mod2^k) -> r: random val, a: secret sharing of user input
 
     let mut party_mask: Vec<u16> = Vec::new();
-    party_mask.push(p.offlinedata.r_share[0].wrapping_sub(p.offlinedata.x_share[0]));
+
+    for k in 0..iter_end {
+        party_mask.push(p.offlinedata.r_share[k].wrapping_sub(p.offlinedata.x_share[k]));
+    }
+
     let mask = p.netlayer.exchange_u16_vec(party_mask).await;
 
     println!("MASK X VALUE (u16 domain):");
     println!("{}", mask[0]);
 
-    println!("");
-    println!("---------- EvalAll ---------- ----------");
-    println!("");
+    let mut all_this_beaver_halfs: Vec<Vec<u8>> = Vec::new();
 
-    // Protocol 2(b) - compute yσ (EvalAll routine -> implement in DPF key)
-    let y_vec = p.offlinedata.k_share[0].evalAll();
-    println!("y_vec LENGTH: {:?}",y_vec.len());
+    for j in 0..iter_end {
+// Protocol 2(b) - compute yσ (EvalAll routine -> implement in DPF key)
+        println!("");
+        println!("---------- EvalAll ---------- ----------");
+        println!("");
+    
+        let y_vec = p.offlinedata.k_share[j].evalAll();
+        println!("y_vec LENGTH: {:?}",y_vec.len());
 
-    let func_database = load_func_db();
-    println!("FUNC DB LENGTH: {}", func_database.len());
+        let func_database = load_func_db();
+        println!("FUNC DB LENGTH: {}", func_database.len());
 
-    println!("");
-    println!("---------- u Calculation (DB lookup) ----------");
-    println!("");
+        println!("");
+        println!("---------- u Calculation (DB lookup) ----------");
+        println!("");
 
-    let mut u: RingElm = RingElm::from(0u32);
+        let mut u: RingElm = RingElm::from(0u32);
 
-    // Protocol 2(c) - compute u
-    for i in 0..u16::MAX {
-        let mut shift_index: u16 = i;
-        shift_index = shift_index.wrapping_add(mask[0]);
+// Protocol 2(c) - compute u
+        for i in 0..u16::MAX {
+            let mut shift_index: u16 = i;
+            shift_index = shift_index.wrapping_add(mask[j]);
 
-        if i <= u16::MAX - mask[0] {
-            shift_index = shift_index - 1u16;
-        }
-
-        if y_vec[shift_index as usize] {
-            let mut temp = RingElm::from(func_database[i as usize]);
-            
-            // -1^σ
-            if !p.netlayer.is_server {
-                temp.negate();
+            if i <= u16::MAX - mask[j] {
+                shift_index = shift_index - 1u16;
             }
 
-            u = u + temp;
-        }   
+            if y_vec[shift_index as usize] {
+                let mut temp = RingElm::from(func_database[i as usize]);
+                
+                // -1^σ
+                if !p.netlayer.is_server {
+                    temp.negate();
+                }
+
+                u = u + temp;
+            }   
+        }
+
+        println!("U VALUE (u32 ring):");
+        u.print();
+        println!("");
+
+        println!("");
+        println!("---------- Beaver Triple ---------- ----------");
+        println!("");
+
+        let beaver_this_half: Vec<u8> = p.offlinedata.beavers[j].beaver_mul0(
+            u,
+            p.offlinedata.w_share[j]
+        );
+
+        println!("THIS HALF FOR BEAVER TRIPLE:");
+        println!("{:?}", beaver_this_half);
+        println!("");
+
+        all_this_beaver_halfs.push(beaver_this_half);
     }
 
-    println!("U VALUE (u32 ring):");
-    u.print();
+    let all_beaver_other_halfs: Vec<Vec<u8>> = p.netlayer.exchange_byte_vec(&all_this_beaver_halfs).await;
+
+    println!("---------- After Processing all Inputs Locally ---------- ----------");
     println!("");
-
-    println!("");
-    println!("---------- Beaver Triple ---------- ----------");
-    println!("");
-    
-    let beaver_this_half: Vec<u8> = p.offlinedata.beavers[0].beaver_mul0(
-        u,
-        p.offlinedata.w_share[0]
-    );
-
-    println!("THIS HALF FOR BEAVER TRIPLE:");
-    println!("{:?}", beaver_this_half);
-
-    let beaver_other_half: Vec<u8> = p.netlayer.exchange_byte_vec(&beaver_this_half).await;
-
     println!("OTHER HALF FOR BEAVER TRIPLE:");
-    println!("{:?}", beaver_other_half);
+    println!("{:?}", all_beaver_other_halfs);
 
-    let beaver_secret_share: RingElm = p.offlinedata.beavers[0].beaver_mul1(
-        p.netlayer.is_server,
-        &beaver_other_half
-    );
+    let mut beaver_shares_return_vector: Vec<RingElm> = Vec::new();
+
+    for l in 0..iter_end {
+        let beaver_secret_share: RingElm = p.offlinedata.beavers[l].beaver_mul1(
+            p.netlayer.is_server,
+            &all_beaver_other_halfs[l]
+        );
+
+        beaver_shares_return_vector.push(beaver_secret_share);
+    }
 
     println!("BEAVER SECRET SHARE:");
-    beaver_secret_share.print();
+    println!("{:?}", beaver_shares_return_vector);
     println!("");
 
-    println!("");
-    println!("---------- Correctness ---------- ----------");
-    println!("");
+    // println!("");
+    // println!("---------- Correctness ---------- ----------");
+    // println!("");
 
-    println!("THIS PARTY BEAVER:");
-    beaver_secret_share.print();
-    println!("");
+    // println!("THIS PARTY BEAVER:");
+    // beaver_secret_share.print();
+    // println!("");
 
-    let this_party_beaver: Vec<RingElm> = vec![beaver_secret_share];
-    let beaver_comb = p.netlayer.exchange_ring_vec(this_party_beaver).await;
+    // let this_party_beaver: Vec<RingElm> = vec![beaver_secret_share];
+    // let beaver_comb = p.netlayer.exchange_ring_vec(this_party_beaver).await;
 
-    println!("EXCHANGE VALUE");
-    beaver_comb[0].print();
-    println!("");
+    // println!("EXCHANGE VALUE");
+    // beaver_comb[0].print();
+    // println!("");
 
-    println!("EXCHANGE VALUE BITS:");
-    println!("{:b}", beaver_comb[0].to_u32().unwrap());
+    // println!("EXCHANGE VALUE BITS:");
+    // println!("{:b}", beaver_comb[0].to_u32().unwrap());
 
-    let mut result: f32 = beaver_comb[0].to_u32().unwrap() as f32;
-    let f32_number = result / (1 << 16) as f32;
+    // let mut result: f32 = beaver_comb[0].to_u32().unwrap() as f32;
+    // let f32_number = result / (1 << 16) as f32;
 
-    println!("Original u32 number as f32: {}", result);
-    println!("Interpreted f32 number: {}", f32_number);
+    // println!("Original u32 number as f32: {}", result);
+    // println!("Interpreted f32 number: {}", f32_number);
 
-    beaver_secret_share
+    beaver_shares_return_vector
 }
 
 fn load_func_db()->Vec<f32>{

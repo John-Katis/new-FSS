@@ -7,7 +7,7 @@ use libmpc::offline_data::BasicOffline;
 use fss::bits_to_u16;
 
 use std::fs::File;
-use std::io::Write;
+use std::io::{Write, self, BufRead, BufReader};
 use std::env;
 use rand::Rng;
 use std::time::Instant;
@@ -43,22 +43,27 @@ async fn main() {
     } else {
         eprintln!("No arguments provided.");
     }
+
+    let mut input_vec: Vec<Vec<bool>> = Vec::new();
+    match read_bool_vectors_from_file("../input/input1.txt") {
+        Ok(u32_vector) => { input_vec = u32_vector; }
+        Err(e) => { eprintln!("Error: {}", e); }
+    }
     
-    let offline_time: f32 = gen_offlinedata().as_secs_f32();
+    let offline_time: f32 = gen_offlinedata(input_vec).as_secs_f32();
     let index =  if is_server {String::from("0")} else {String::from("1")};
     let index_ID = if is_server{0u8} else {1u8};
 
-    let mut result:RingElm = RingElm::zero();
+    let mut result: Vec<RingElm> = Vec::new();
     let mut netlayer = NetInterface::new(is_server,LAN_ADDRESS).await;
 
     let mut offlinedata = BasicOffline::new();
     offlinedata.loadData(&index_ID);
-    netlayer.reset_timer().await;
     let offline_overhead = offlinedata.overhead;
+    netlayer.reset_timer().await;
     let mut p: MPCParty<BasicOffline> = MPCParty::new(offlinedata, netlayer);
     p.setup(10, 10);
 
-    // TODO result as a vector
     if is_server{
         result = pika_eval(&mut p).await;
     }else{
@@ -77,27 +82,75 @@ async fn main() {
     // index 2: overhead
     // index 3: offline duration in seconds
     let mut benchmarking_vec: Vec<f32> = p.netlayer.return_benchmarking().await;
-    benchmarking_vec.push(offline_time);
+    benchmarking_vec.push(offline_time * 1000.0);
     benchmarking_vec.push(offline_overhead);
     println!("benchmarking vector: {:?}", benchmarking_vec);
     println!("");
-    // TODO add offline overhead in benchmarking
 
-    let mut f_benchmarking = File::create(format!( "../test/results/p0/benchamrking_{}", &index)).expect("create failed");
-    f_benchmarking.write_all(&bincode::serialize(&benchmarking_vec).expect("Serialize cmp-bool-share error")).expect("Write cmp-bool-share error.");
+    // TODO the second index should be the numer of runs in both create file commands
+    let mut f_benchmarking = File::create(format!( "../results/p{}/benchamrking_{}.txt", &index, &index)).expect("create failed");
+    for i in 0..benchmarking_vec.len() {
+        writeln!(f_benchmarking, "{}", benchmarking_vec[i]);
+    }
+    //f_benchmarking.write_all(&bincode::serialize(&benchmarking_vec).expect("Serialize cmp-bool-share error")).expect("Write cmp-bool-share error.");
 
-    let mut f_ret = File::create(format!( "../test/ret{}.bin", &index)).expect("create failed");
+    // TODO write the final result to file - not beaver secret share ?
+    let mut f_ret = File::create(format!( "../results/numeric_results/p{}/ret{}.bin", &index, &index)).expect("create failed");
     f_ret.write_all(&bincode::serialize(&result).expect("Serialize cmp-bool-share error")).expect("Write cmp-bool-share error.");
-
-    //TODO also store numeric result (accurate)
 }
 
-fn gen_offlinedata()->Duration{
+fn gen_offlinedata(input_bool_vectors: Vec<Vec<bool>>)->Duration{
     let offline_timer = Instant::now();
 
     let offline = BasicOffline::new();
-    offline.genData(&PrgSeed::zero());
+    offline.genData(input_bool_vectors);
     let elapsed_time = offline_timer.elapsed();
     println!("Offline key generation time:{:?}", elapsed_time);
     elapsed_time
+}
+
+// TODO this needs thought
+// Input needs to be represented in 16 bit and be able to go from u32->u16->u32->f32 wihtout losing information
+fn read_bool_vectors_from_file(file_path: &str) -> io::Result<Vec<Vec<bool>>> {
+    let file = File::open(file_path)?;
+    let reader = BufReader::new(file);
+
+    let mut bool_vector: Vec<Vec<bool>> = Vec::new();
+
+    for line in reader.lines() {
+        let value_str = line?;
+
+        match value_str.trim().parse::<i32>() {
+            
+            Ok(value_i32) => {
+                let value_u32 = if value_i32 >= 0 {
+                    value_i32 as u32
+                } else {
+                    // Flip the sign bit for negative numbers
+                    (value_i32.abs() as u32) ^ (1 << 31)
+                };
+
+                let bools = u32_to_bool_vector(value_u32);
+                bool_vector.push(bools);
+            }
+            Err(e) => {
+                return Err(io::Error::new(io::ErrorKind::InvalidData, format!("Error parsing line '{}': {}", value_str, e)));
+            }
+        }
+    }
+
+    Ok(bool_vector)
+}
+
+fn u32_to_bool_vector(value: u32) -> Vec<bool> {
+    let bytes = value.to_be_bytes();
+    let mut bool_vector = Vec::new();
+
+    for byte in bytes.iter() {
+        for i in (0..8).rev() {
+            bool_vector.push((byte & (1 << i)) != 0);
+        }
+    }
+
+    bool_vector
 }
