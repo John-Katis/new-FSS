@@ -44,59 +44,68 @@ async fn main() {
         eprintln!("No arguments provided.");
     }
 
-    let mut input_vec: Vec<Vec<bool>> = Vec::new();
-    match read_bool_vectors_from_file("../input/input1.txt") {
-        Ok(u32_vector) => { input_vec = u32_vector; }
-        Err(e) => { eprintln!("Error: {}", e); }
-    }
-    
-    let offline_time: f32 = gen_offlinedata(input_vec).as_secs_f32();
     let index =  if is_server {String::from("0")} else {String::from("1")};
     let index_ID = if is_server{0u8} else {1u8};
 
-    let mut result: Vec<RingElm> = Vec::new();
-    let mut netlayer = NetInterface::new(is_server,LAN_ADDRESS).await;
+    for run in 0..1000 {
 
-    let mut offlinedata = BasicOffline::new();
-    offlinedata.loadData(&index_ID);
-    let offline_overhead = offlinedata.overhead;
-    netlayer.reset_timer().await;
-    let mut p: MPCParty<BasicOffline> = MPCParty::new(offlinedata, netlayer);
-    p.setup(10, 10);
+        let mut input_vec: Vec<Vec<bool>> = Vec::new();
+        match read_bool_vectors_from_file("../input/input1.txt") {
+            Ok(u32_vector) => { input_vec = u32_vector; }
+            Err(e) => { eprintln!("Error: {}", e); }
+        }
+        
+        let offline_time: f32 = gen_offlinedata(input_vec).as_secs_f32();
+        
+        let mut result: Vec<RingElm> = Vec::new();
+        let mut netlayer = NetInterface::new(is_server,LAN_ADDRESS).await;
+        let mut offlinedata = BasicOffline::new();
 
-    if is_server{
-        result = pika_eval(&mut p).await;
-    }else{
-        result = pika_eval(&mut p).await;
+        offlinedata.loadData(&index_ID);
+        let offline_overhead = offlinedata.overhead;
+
+        netlayer.reset_timer().await;
+
+        let mut p: MPCParty<BasicOffline> = MPCParty::new(offlinedata, netlayer);
+        p.setup(10, 10);
+
+        if is_server{
+            result = pika_eval(&mut p).await;
+        }else{
+            result = pika_eval(&mut p).await;
+        }
+
+        // p.netlayer.print_benchmarking().await;
+
+        // ELEMENTS OF VECTOR
+        // index 0: online duration in seconds
+        // index 1: rounds
+        // index 2: overhead
+        // index 3: offline duration in seconds
+        let mut benchmarking_vec: Vec<f32> = p.netlayer.return_benchmarking().await;
+        benchmarking_vec.push(offline_time * 1000.0);
+        benchmarking_vec.push(offline_overhead);
+        // println!("");
+        // println!("---------- Benchmarking ---------- ----------");
+        println!("");
+        println!("benchmarking vector: {:?}", benchmarking_vec);
+        println!("");
+
+        // TODO the second index should be the numer of runs in both create file commands
+        let mut f_benchmarking = File::create(format!( "../results/p{}/benchamrking{}.txt", &index, &run)).expect("create failed");
+        for j in 0..benchmarking_vec.len() {
+            writeln!(f_benchmarking, "{}", benchmarking_vec[j]);
+        }
+        //f_benchmarking.write_all(&bincode::serialize(&benchmarking_vec).expect("Serialize cmp-bool-share error")).expect("Write cmp-bool-share error.");
+
+        // TODO write the final result to file - not beaver secret share ?
+        let mut f_ret = File::create(format!( "../results/numeric_results/p{}/ret{}.bin", &index, &run)).expect("create failed");
+        f_ret.write_all(&bincode::serialize(&result).expect("Serialize cmp-bool-share error")).expect("Write cmp-bool-share error.");
+
+        println!("\n----- ----- -----\n----- ----- -----\n----- ----- -----\n");
+        println!("----- ITERATION {} -----", run);
+        println!("\n----- ----- -----\n----- ----- -----\n----- ----- -----\n");
     }
-
-    println!("");
-    println!("---------- Benchmarking ---------- ----------");
-    println!("");
-
-    p.netlayer.print_benchmarking().await;
-
-    // ELEMENTS OF VECTOR
-    // index 0: online duration in seconds
-    // index 1: rounds
-    // index 2: overhead
-    // index 3: offline duration in seconds
-    let mut benchmarking_vec: Vec<f32> = p.netlayer.return_benchmarking().await;
-    benchmarking_vec.push(offline_time * 1000.0);
-    benchmarking_vec.push(offline_overhead);
-    println!("benchmarking vector: {:?}", benchmarking_vec);
-    println!("");
-
-    // TODO the second index should be the numer of runs in both create file commands
-    let mut f_benchmarking = File::create(format!( "../results/p{}/benchamrking_{}.txt", &index, &index)).expect("create failed");
-    for i in 0..benchmarking_vec.len() {
-        writeln!(f_benchmarking, "{}", benchmarking_vec[i]);
-    }
-    //f_benchmarking.write_all(&bincode::serialize(&benchmarking_vec).expect("Serialize cmp-bool-share error")).expect("Write cmp-bool-share error.");
-
-    // TODO write the final result to file - not beaver secret share ?
-    let mut f_ret = File::create(format!( "../results/numeric_results/p{}/ret{}.bin", &index, &index)).expect("create failed");
-    f_ret.write_all(&bincode::serialize(&result).expect("Serialize cmp-bool-share error")).expect("Write cmp-bool-share error.");
 }
 
 fn gen_offlinedata(input_bool_vectors: Vec<Vec<bool>>)->Duration{

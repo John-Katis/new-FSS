@@ -192,31 +192,31 @@ impl BasicOffline{
         overhead += (func_truth_table.len() * mem::size_of::<f32>()) as f32; // overhead for the function truth table
 
 // ENCODE - DECODE INPUT FOR DEBUGGING!!!
-        println!("");
-        println!("----- ORIGINAL INPUTS -----");
-        println!("");
+        // println!("");
+        // println!("----- ORIGINAL INPUTS -----");
+        // println!("");
 
-        let mut encoded_number: u16 = 0;
-        for &bit in &input_bool_vectors[0][0..16] {
-            encoded_number = (encoded_number << 1) | bit as u16;
-        }
+        // let mut encoded_number: u16 = 0;
+        // for &bit in &input_bool_vectors[0][0..16] {
+        //     encoded_number = (encoded_number << 1) | bit as u16;
+        // }
 
-        // Extract the sign, integer part, and fractional part
-        let sign = ((encoded_number >> 15) & 1) == 1;
-        let integer_part = (encoded_number >> 9) & 0b111111;
-        let fractional_part = encoded_number & 0b111_1111_1111;
+        // // Extract the sign, integer part, and fractional part
+        // let sign = ((encoded_number >> 15) & 1) == 1;
+        // let integer_part = (encoded_number >> 9) & 0b111111;
+        // let fractional_part = encoded_number & 0b111_1111_1111;
 
-        // Combine into an f32 number
-        let f32_number = if sign {
-            -((integer_part as f32) + (fractional_part as f32) / 512.0)
-        } else {
-            (integer_part as f32) + (fractional_part as f32) / 512.0
-        };
-        println!("IN u16 {}", bits_to_u16(&input_bool_vectors[0][0..16]));
-        //println!("Original boolean vector: {}", input_bool_vectors[0][0..16]);
-        println!("Encoded number (u16): {}", encoded_number);
-        println!("Decoded f32 number: {}", f32_number);
-        println!("");
+        // // Combine into an f32 number
+        // let f32_number = if sign {
+        //     -((integer_part as f32) + (fractional_part as f32) / 512.0)
+        // } else {
+        //     (integer_part as f32) + (fractional_part as f32) / 512.0
+        // };
+        // println!("IN u16 {}", bits_to_u16(&input_bool_vectors[0][0..16]));
+        // //println!("Original boolean vector: {}", input_bool_vectors[0][0..16]);
+        // println!("Encoded number (u16): {}", encoded_number);
+        // println!("Decoded f32 number: {}", f32_number);
+        // println!("");
 // END DEBUGGING
     
         write_file("../data/k0.bin", &dpf_0);

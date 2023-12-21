@@ -3,6 +3,10 @@
 /pika/test/**.bin
 /pika/test/results/p0/**.bin
 /pika/test/results/p1/**.bin
+/pika/results/numeric_results/p0/**.bin
+/pika/results/numeric_results/p1/**.bin
+/pika/results/p0/**.txt
+/pika/results/p1/**.txt
 
 # Produced at compile time
 **/target

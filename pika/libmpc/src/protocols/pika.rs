@@ -12,23 +12,23 @@ pub const TOTAL_BITS:usize = 32;
 pub async fn pika_eval(p: &mut MPCParty<BasicOffline>)->Vec<RingElm>{
     let iter_end: usize = p.offlinedata.x_share.len() as usize;
 
-    println!("");
-    println!("---------- Party Shares ---------- ----------");
-    println!("");
+    // println!("");
+    // println!("---------- Party Shares ---------- ----------");
+    // println!("");
 
-    println!("CURRENT SHARE (u16 ring):");
-    println!("{}", p.offlinedata.x_share[0]);
+    // println!("CURRENT SHARE (u16 ring):");
+    // println!("{}", p.offlinedata.x_share[0]);
 
-    println!("W SHARE (u32 ring): ");
-    p.offlinedata.w_share[0].print();
-    println!("");
+    // println!("W SHARE (u32 ring): ");
+    // p.offlinedata.w_share[0].print();
+    // println!("");
 
-    println!("R SHARE (u16 domain):");
-    println!("{}", p.offlinedata.r_share[0]);
+    // println!("R SHARE (u16 domain):");
+    // println!("{}", p.offlinedata.r_share[0]);
     
-    println!("");
-    println!("---------- Mask x ---------- ----------");
-    println!("");
+    // println!("");
+    // println!("---------- Mask x ---------- ----------");
+    // println!("");
 
 // Protocol 2(a) - reconstruct x=r-a(mod2^k) -> r: random val, a: secret sharing of user input
 
@@ -40,26 +40,26 @@ pub async fn pika_eval(p: &mut MPCParty<BasicOffline>)->Vec<RingElm>{
 
     let mask = p.netlayer.exchange_u16_vec(party_mask).await;
 
-    println!("MASK X VALUE (u16 domain):");
-    println!("{}", mask[0]);
+    // println!("MASK X VALUE (u16 domain):");
+    // println!("{}", mask[0]);
 
     let mut all_this_beaver_halfs: Vec<Vec<u8>> = Vec::new();
 
     for j in 0..iter_end {
 // Protocol 2(b) - compute yσ (EvalAll routine -> implement in DPF key)
-        println!("");
-        println!("---------- EvalAll ---------- ----------");
-        println!("");
+        // println!("");
+        // println!("---------- EvalAll ---------- ----------");
+        // println!("");
     
         let y_vec = p.offlinedata.k_share[j].evalAll();
-        println!("y_vec LENGTH: {:?}",y_vec.len());
+        // println!("y_vec LENGTH: {:?}",y_vec.len());
 
         let func_database = load_func_db();
-        println!("FUNC DB LENGTH: {}", func_database.len());
+        // println!("FUNC DB LENGTH: {}", func_database.len());
 
-        println!("");
-        println!("---------- u Calculation (DB lookup) ----------");
-        println!("");
+        // println!("");
+        // println!("---------- u Calculation (DB lookup) ----------");
+        // println!("");
 
         let mut u: RingElm = RingElm::from(0u32);
 
@@ -84,32 +84,32 @@ pub async fn pika_eval(p: &mut MPCParty<BasicOffline>)->Vec<RingElm>{
             }   
         }
 
-        println!("U VALUE (u32 ring):");
-        u.print();
-        println!("");
+        // println!("U VALUE (u32 ring):");
+        // u.print();
+        // println!("");
 
-        println!("");
-        println!("---------- Beaver Triple ---------- ----------");
-        println!("");
+        // println!("");
+        // println!("---------- Beaver Triple ---------- ----------");
+        // println!("");
 
         let beaver_this_half: Vec<u8> = p.offlinedata.beavers[j].beaver_mul0(
             u,
             p.offlinedata.w_share[j]
         );
 
-        println!("THIS HALF FOR BEAVER TRIPLE:");
-        println!("{:?}", beaver_this_half);
-        println!("");
+        // println!("THIS HALF FOR BEAVER TRIPLE:");
+        // println!("{:?}", beaver_this_half);
+        // println!("");
 
         all_this_beaver_halfs.push(beaver_this_half);
     }
 
     let all_beaver_other_halfs: Vec<Vec<u8>> = p.netlayer.exchange_byte_vec(&all_this_beaver_halfs).await;
 
-    println!("---------- After Processing all Inputs Locally ---------- ----------");
-    println!("");
-    println!("OTHER HALF FOR BEAVER TRIPLE:");
-    println!("{:?}", all_beaver_other_halfs);
+    // println!("---------- After Processing all Inputs Locally ---------- ----------");
+    // println!("");
+    // println!("OTHER HALF FOR BEAVER TRIPLE:");
+    // println!("{:?}", all_beaver_other_halfs);
 
     let mut beaver_shares_return_vector: Vec<RingElm> = Vec::new();
 
@@ -122,9 +122,9 @@ pub async fn pika_eval(p: &mut MPCParty<BasicOffline>)->Vec<RingElm>{
         beaver_shares_return_vector.push(beaver_secret_share);
     }
 
-    println!("BEAVER SECRET SHARE:");
-    println!("{:?}", beaver_shares_return_vector);
-    println!("");
+    // println!("BEAVER SECRET SHARE:");
+    // println!("{:?}", beaver_shares_return_vector);
+    // println!("");
 
     // println!("");
     // println!("---------- Correctness ---------- ----------");

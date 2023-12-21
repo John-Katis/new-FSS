@@ -11,6 +11,7 @@ use fss::Group;
 //use async_trait::async_trait;
 use std::time::Instant;
 use std::time::Duration;
+use std::{thread, time};
 
 // #[derive(Clone)]
 pub struct NetInterface{
@@ -42,6 +43,7 @@ impl NetInterface{
             }
         }
         else{
+            std::thread::sleep(time::Duration::from_millis(15));
             let s = TcpStream::connect(addr).await.unwrap();
             let (r, w) = s.into_split();
             println!("Connect to {} success.", addr);
