@@ -16,7 +16,7 @@ use std::time::Duration;
 use fss::Group;
 
 const LAN_ADDRESS: &'static str = "127.0.0.1:8088";
-const WAN_ADDRESS: &'static str = "45.63.6.86:8088";
+const WAN_ADDRESS: &'static str = "192.168.1.1:8088";
 pub const TEST_WAN_NETWORK: bool = true;
 
 #[tokio::main]
@@ -58,7 +58,7 @@ async fn main() {
         let offline_time: f32 = gen_offlinedata(input_vec).as_secs_f32();
         
         let mut result: Vec<RingElm> = Vec::new();
-        let mut netlayer = NetInterface::new(is_server,LAN_ADDRESS).await;
+        let mut netlayer = NetInterface::new(is_server,WAN_ADDRESS).await;
         let mut offlinedata = BasicOffline::new();
 
         offlinedata.loadData(&index_ID);
