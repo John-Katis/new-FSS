@@ -58,7 +58,7 @@ async fn main() {
         let offline_time: f32 = gen_offlinedata(input_vec).as_secs_f32();
         
         let mut result: Vec<RingElm> = Vec::new();
-        let mut netlayer = NetInterface::new(is_server,WAN_ADDRESS).await;
+        let mut netlayer = NetInterface::new(is_server,LAN_ADDRESS).await;
         let mut offlinedata = BasicOffline::new();
 
         offlinedata.loadData(&index_ID);
@@ -82,11 +82,15 @@ async fn main() {
         // index 1: rounds
         // index 2: overhead
         // index 3: offline duration in seconds
+        // index 4: offline overhead in bytes
         let mut benchmarking_vec: Vec<f32> = p.netlayer.return_benchmarking().await;
         benchmarking_vec.push(offline_time * 1000.0);
         benchmarking_vec.push(offline_overhead);
         // println!("");
         // println!("---------- Benchmarking ---------- ----------");
+        println!("\n----- ----- -----\n----- ----- -----\n----- ----- -----\n");
+        println!("----- ITERATION {} -----", run);
+        println!("\n----- ----- -----\n----- ----- -----\n----- ----- -----\n");
         println!("");
         println!("benchmarking vector: {:?}", benchmarking_vec);
         println!("");
@@ -101,10 +105,6 @@ async fn main() {
         // TODO write the final result to file - not beaver secret share ?
         let mut f_ret = File::create(format!( "../results/numeric_results/p{}/ret{}.bin", &index, &run)).expect("create failed");
         f_ret.write_all(&bincode::serialize(&result).expect("Serialize cmp-bool-share error")).expect("Write cmp-bool-share error.");
-
-        println!("\n----- ----- -----\n----- ----- -----\n----- ----- -----\n");
-        println!("----- ITERATION {} -----", run);
-        println!("\n----- ----- -----\n----- ----- -----\n----- ----- -----\n");
     }
 }
 

@@ -27,10 +27,7 @@ pub struct NetInterface{
 impl NetInterface{
     pub async fn new(isserver: bool, addr: &str)->NetInterface{
         if isserver{
-            let listner = TcpListener::bind(addr).await.unwrap_or_else(|err| {
-                eprintln!("Error binding to address: {}", err);
-                std::process::exit(1);
-            });
+            let listner = TcpListener::bind(addr).await.unwrap();
             println!("***Start Listening ......***");
             let (c, caddr) = listner.accept().await.unwrap();
             println!("Accept from {:?}", caddr);
