@@ -100,8 +100,6 @@ async fn main() {
         
         all_benchmarking_results.push(benchmarking_vec);
         all_protocol_outputs.push(result)
-
-        // TODO check LAN parameters - create LAN network here
     }
 
     for store_index in 0..10 {
