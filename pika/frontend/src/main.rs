@@ -47,7 +47,15 @@ async fn main() {
     let index =  if is_server {String::from("0")} else {String::from("1")};
     let index_ID = if is_server{0u8} else {1u8};
 
-    for run in 0..1000 {
+    let mut netlayer = NetInterface::new(is_server,WAN_ADDRESS).await;
+    let mut offlinedata = BasicOffline::new();
+    let mut p: MPCParty<BasicOffline> = MPCParty::new(offlinedata, netlayer);
+    p.setup(10, 10);
+
+    let mut all_benchmarking_results: Vec<Vec<f32>> = Vec::new();
+    let mut all_protocol_outputs: Vec<Vec<RingElm>> = Vec::new();
+
+    for run in 0..10 {
 
         let mut input_vec: Vec<Vec<bool>> = Vec::new();
         match read_bool_vectors_from_file("../input/input1.txt") {
@@ -58,16 +66,11 @@ async fn main() {
         let offline_time: f32 = gen_offlinedata(input_vec).as_secs_f32();
         
         let mut result: Vec<RingElm> = Vec::new();
-        let mut netlayer = NetInterface::new(is_server,LAN_ADDRESS).await;
-        let mut offlinedata = BasicOffline::new();
 
-        offlinedata.loadData(&index_ID);
-        let offline_overhead = offlinedata.overhead;
+        p.offlinedata.loadData(&index_ID);
+        let offline_overhead = p.offlinedata.overhead;
 
-        netlayer.reset_timer().await;
-
-        let mut p: MPCParty<BasicOffline> = MPCParty::new(offlinedata, netlayer);
-        p.setup(10, 10);
+        p.netlayer.reset_timer().await;
 
         if is_server{
             result = pika_eval(&mut p).await;
@@ -94,18 +97,24 @@ async fn main() {
         println!("");
         println!("benchmarking vector: {:?}", benchmarking_vec);
         println!("");
+        
+        all_benchmarking_results.push(benchmarking_vec);
+        all_protocol_outputs.push(result)
 
-        // TODO the second index should be the numer of runs in both create file commands
-        let mut f_benchmarking = File::create(format!( "../results/p{}/benchamrking{}.txt", &index, &run)).expect("create failed");
-        for j in 0..benchmarking_vec.len() {
-            writeln!(f_benchmarking, "{}", benchmarking_vec[j]);
+        // TODO check LAN parameters - create LAN network here
+    }
+
+    for store_index in 0..10 {
+        let mut f_benchmarking = File::create(format!( "../results/p{}/benchamrking{}.txt", &index, &store_index)).expect("create failed");
+        for j in 0..all_benchmarking_results[store_index].len() {
+            writeln!(f_benchmarking, "{}", all_benchmarking_results[store_index][j]);
         }
         //f_benchmarking.write_all(&bincode::serialize(&benchmarking_vec).expect("Serialize cmp-bool-share error")).expect("Write cmp-bool-share error.");
 
-        // TODO write the final result to file - not beaver secret share ?
-        let mut f_ret = File::create(format!( "../results/numeric_results/p{}/ret{}.bin", &index, &run)).expect("create failed");
-        f_ret.write_all(&bincode::serialize(&result).expect("Serialize cmp-bool-share error")).expect("Write cmp-bool-share error.");
+        let mut f_ret = File::create(format!( "../results/numeric_results/p{}/ret{}.bin", &index, &store_index)).expect("create failed");
+        f_ret.write_all(&bincode::serialize(&all_protocol_outputs[store_index]).expect("Serialize cmp-bool-share error")).expect("Write cmp-bool-share error.");
     }
+
 }
 
 fn gen_offlinedata(input_bool_vectors: Vec<Vec<bool>>)->Duration{

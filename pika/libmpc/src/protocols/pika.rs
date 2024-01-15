@@ -131,10 +131,10 @@ pub async fn pika_eval(p: &mut MPCParty<BasicOffline>)->Vec<RingElm>{
     // println!("");
 
     // println!("THIS PARTY BEAVER:");
-    // beaver_secret_share.print();
+    // beaver_shares_return_vector[0].print();
     // println!("");
 
-    // let this_party_beaver: Vec<RingElm> = vec![beaver_secret_share];
+    // let this_party_beaver: Vec<RingElm> = vec![beaver_shares_return_vector[0]];
     // let beaver_comb = p.netlayer.exchange_ring_vec(this_party_beaver).await;
 
     // println!("EXCHANGE VALUE");
