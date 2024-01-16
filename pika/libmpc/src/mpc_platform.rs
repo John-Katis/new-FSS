@@ -60,6 +60,8 @@ impl NetInterface{
     
     pub async fn reset_timer(&mut self){
         self.timer = Instant::now();
+        self.received = 0usize;
+        self.rounds_occured = 0u32;
     }
 
     pub async fn print_benchmarking(&mut self){

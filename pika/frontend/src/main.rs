@@ -55,7 +55,7 @@ async fn main() {
     let mut all_benchmarking_results: Vec<Vec<f32>> = Vec::new();
     let mut all_protocol_outputs: Vec<Vec<RingElm>> = Vec::new();
 
-    for run in 0..10 {
+    for run in 0..1000 {
 
         let mut input_vec: Vec<Vec<bool>> = Vec::new();
         match read_bool_vectors_from_file("../input/input1.txt") {
@@ -102,7 +102,7 @@ async fn main() {
         all_protocol_outputs.push(result)
     }
 
-    for store_index in 0..10 {
+    for store_index in 0..1000 {
         let mut f_benchmarking = File::create(format!( "../results/p{}/benchamrking{}.txt", &index, &store_index)).expect("create failed");
         for j in 0..all_benchmarking_results[store_index].len() {
             writeln!(f_benchmarking, "{}", all_benchmarking_results[store_index][j]);

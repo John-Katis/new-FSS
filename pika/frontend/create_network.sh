@@ -24,11 +24,10 @@ sudo ip netns exec ns2 ip link set veth2 up
 
 #Step 4: Apply Traffic Control (tc)
 
-# TODO check LAN parameters - create LAN network here - make sure to have sources??
+# LAN
+# sudo ip netns exec ns1 tc qdisc add dev veth1 root netem delay 0.5ms rate 1gbit
+# WAN
 sudo ip netns exec ns1 tc qdisc add dev veth1 root netem delay 100ms rate 1gbit
-# sudo ip netns exec ns1 tc qdisc add dev veth1 root netem delay 80ms rate 100mbit
-# sudo ip netns exec ns1 tc qdisc add dev veth1 root netem delay 500ms rate 10mbit
-
 
 
 #Step 5: Apply Traffic Control (tc)
