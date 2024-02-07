@@ -189,7 +189,7 @@ impl BasicOffline{
             func_truth_table.push(sigmoid_val);       
         }
 
-        overhead += (func_truth_table.len() * mem::size_of::<f32>()) as f32; // overhead for the function truth table
+        // overhead += (func_truth_table.len() * mem::size_of::<f32>()) as f32; // overhead for the function truth table
 
 // ENCODE - DECODE INPUT FOR DEBUGGING!!!
         // println!("");

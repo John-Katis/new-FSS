@@ -46,7 +46,7 @@ async fn main() {
 
     let index =  if is_server {String::from("0")} else {String::from("1")};
     let index_ID = if is_server{0u8} else {1u8};
-
+//TODO always WAN address - change network
     let mut netlayer = NetInterface::new(is_server,WAN_ADDRESS).await;
     let mut offlinedata = BasicOffline::new();
     let mut p: MPCParty<BasicOffline> = MPCParty::new(offlinedata, netlayer);

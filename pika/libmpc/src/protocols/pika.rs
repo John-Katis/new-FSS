@@ -103,7 +103,7 @@ pub async fn pika_eval(p: &mut MPCParty<BasicOffline>)->Vec<RingElm>{
 
         all_this_beaver_halfs.push(beaver_this_half);
     }
-
+//FIXME incorrect for batched inputs
     let all_beaver_other_halfs: Vec<Vec<u8>> = p.netlayer.exchange_byte_vec(&all_this_beaver_halfs).await;
 
     // println!("---------- After Processing all Inputs Locally ---------- ----------");

@@ -317,10 +317,9 @@ impl NetInterface{
                     // println!("Receive {} bytes from partner.", n);
                 }        
             }
-            self.rounds_occured +=1;
-
             return_vec.push(buf);   
         }
+        self.rounds_occured +=1;
         return_vec
     }
 
