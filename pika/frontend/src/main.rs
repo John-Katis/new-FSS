@@ -125,8 +125,6 @@ fn gen_offlinedata(input_bool_vectors: Vec<Vec<bool>>)->Duration{
     elapsed_time
 }
 
-// TODO this needs thought
-// Input needs to be represented in 16 bit and be able to go from u32->u16->u32->f32 wihtout losing information
 fn read_bool_vectors_from_file(file_path: &str) -> io::Result<Vec<Vec<bool>>> {
     let file = File::open(file_path)?;
     let reader = BufReader::new(file);
