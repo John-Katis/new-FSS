@@ -19,8 +19,8 @@ pub const INTERVALS_AMOUNT:usize = 1000;
 pub const INPUT_DOMAIN:usize = 32;
 pub const BOUNDED_DOMAIN:usize = 16;
 pub const TOTAL_NUMBERS:i32 = 1 << 16;
-pub const INTEGER_BITS:i32 = 7;
-pub const FLOAT_BITS:i32 = 9;
+pub const INTEGER_BITS:i32 = 7; // Sigmoid: 7, Sqrt: 4 , tanh: 7
+pub const FLOAT_BITS:i32 = 9;   // Sigmoid: 9, Sqrt: 12, tanh: 9
 pub const TOTAL_BITS:usize = INTEGER_BITS as usize + FLOAT_BITS as usize;
 
 
@@ -99,6 +99,7 @@ impl BasicOffline{
         let mut dpf_1: Vec<DPFKey<bool>> = Vec::new();
 
         let mut wVec_0: Vec<RingElm> = Vec::new();
+
         let mut wVec_1: Vec<RingElm> = Vec::new();
 
         let beaver_size: usize = 1;
@@ -135,8 +136,8 @@ impl BasicOffline{
             rVec_0.push(bits_to_u16(r0));
             rVec_1.push(bits_to_u16(r1));
 
-            overhead += (rVec_0.len() * mem::size_of::<u16>()) as f32; // overhead for one share of r
-
+            overhead += (mem::size_of::<u16>()) as f32; // overhead for one share of r
+            println!("R share: {}", (mem::size_of::<u16>()) as f32);
 // DPF KEYS BASED ON R - EXTRACT CONTROL BIT
             // FIXME the generation and use of x and r can cause issues
             // namely, generating less bits in line share_gen_bits, reduces accuracy
@@ -146,7 +147,7 @@ impl BasicOffline{
             dpf_1.push(dpf_key1);
             
             overhead += (4 * mem::size_of::<bool>() + 17 * (16 * mem::size_of::<u8>())) as f32; // dpf key overhead - 17 prg seeds are 1 for root and 16 for cor_words, 4 bool for key_idx, word and cor_words
-            
+            println!("dpf key: {}", (4 * mem::size_of::<bool>() + 17 * (16 * mem::size_of::<u8>())) as f32);
 // W BIT BASED ON CONTROL BIT
             let w0: RingElm = RingElm::from(bits_to_u32(&share_gen_bits[3*BOUNDED_DOMAIN..3*BOUNDED_DOMAIN+INPUT_DOMAIN]));
             let mut w_bit: RingElm = RingElm::from(1u32);
@@ -159,12 +160,16 @@ impl BasicOffline{
             wVec_0.push(w0);
             wVec_1.push(w1);
 
-            overhead += (wVec_0.len() * mem::size_of::<u32>()) as f32; // overhead for one share of w
-
+            overhead += mem::size_of::<u32>() as f32; // overhead for one share of w
+            println!("W share: {}", mem::size_of::<u32>() as f32);
 // BEAVER TRIPLE
             BeaverTuple::genBeaver(&mut beavertuples0, &mut beavertuples1, &seed, beaver_size);
-
-            overhead += (beavertuples0.len() * (5 * mem::size_of::<u32>())) as f32; // overhead for the beavers generation for 1 party
+            
+            overhead += (5 * mem::size_of::<u32>()) as f32; // overhead for the beavers generation for 1 party
+            println!("beaver: {}", (5 * mem::size_of::<u32>()) as f32);
+            println!("-----------------------");
+            println!("Overhead {} = {}", index, overhead);
+            println!("=======================");
         }
 
 // FUNCTION TRUTH TABLE - generate once
@@ -184,9 +189,9 @@ impl BasicOffline{
                 f32_number = 64f32
             };
 
-            let sigmoid_val = sigmoid(f32_number);
+            let truth_val = tanh(f32_number); // sigmoid, tanh, inv_sqrt
 
-            func_truth_table.push(sigmoid_val);       
+            func_truth_table.push(truth_val);       
         }
 
         // overhead += (func_truth_table.len() * mem::size_of::<f32>()) as f32; // overhead for the function truth table
@@ -243,4 +248,13 @@ impl BasicOffline{
 
 fn sigmoid(x: f32) -> f32 {
     1.0 / (1.0 + std::f32::consts::E.powf(-x))
+}
+
+fn tanh(x: f32) -> f32 {
+    let exp_2x = (-2.0 * x).exp();
+    (1.0 - exp_2x) / (1.0 + exp_2x)
+}
+
+fn inv_sqrt(x: f32) -> f32 {
+    1.0 / x.sqrt()
 }

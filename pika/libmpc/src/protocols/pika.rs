@@ -68,7 +68,7 @@ pub async fn pika_eval(p: &mut MPCParty<BasicOffline>)->Vec<RingElm>{
             let mut shift_index: u16 = i;
             shift_index = shift_index.wrapping_add(mask[j]);
 
-            if i <= u16::MAX - mask[j] {
+            if i <= u16::MAX - mask[j] && shift_index != 0{
                 shift_index = shift_index - 1u16;
             }
 
