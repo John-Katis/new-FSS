@@ -55,7 +55,7 @@ async fn main() {
     // let mut all_benchmarking_results: Vec<Vec<f32>> = Vec::new();
     // let mut all_protocol_outputs: Vec<Vec<RingElm>> = Vec::new();
 
-    for run in 0..3 {
+    for run in 0..1 {
 
         let mut input_vec: Vec<Vec<bool>> = Vec::new();
         match read_bool_vectors_from_file("../input/input1.txt") {
@@ -99,16 +99,16 @@ async fn main() {
         println!("");
         
         // all_benchmarking_results.push(benchmarking_vec);
-        // all_protocol_outputs.push(result)
+        // all_protocol_outputs.push(result);
 
-        // let mut f_benchmarking = File::create(format!( "../results/p{}/benchamrking{}.txt", &index, &run)).expect("create failed");
-        // for j in 0..benchmarking_vec.len() {
-        //     writeln!(f_benchmarking, "{}", benchmarking_vec[j]);
-        // }
-        // //f_benchmarking.write_all(&bincode::serialize(&benchmarking_vec).expect("Serialize cmp-bool-share error")).expect("Write cmp-bool-share error.");
+        let mut f_benchmarking = File::create(format!( "../results/p{}/benchamrking{}.txt", &index, &run)).expect("create failed");
+        for j in 0..benchmarking_vec.len() {
+            writeln!(f_benchmarking, "{}", benchmarking_vec[j]);
+        }
+        //f_benchmarking.write_all(&bincode::serialize(&benchmarking_vec).expect("Serialize cmp-bool-share error")).expect("Write cmp-bool-share error.");
 
-        // let mut f_ret = File::create(format!( "../results/numeric_results/p{}/ret{}.bin", &index, &run)).expect("create failed");
-        // f_ret.write_all(&bincode::serialize(&result).expect("Serialize cmp-bool-share error")).expect("Write cmp-bool-share error.");
+        let mut f_ret = File::create(format!( "../results/numeric_results/p{}/ret{}.bin", &index, &run)).expect("create failed");
+        f_ret.write_all(&bincode::serialize(&result).expect("Serialize cmp-bool-share error")).expect("Write cmp-bool-share error.");
 
     }
 
